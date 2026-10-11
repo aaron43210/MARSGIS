@@ -1,50 +1,37 @@
-/* MarsGIS design tokens + base layout. Light/dark via prefers-color-scheme. */
+/* MarsGIS design tokens + base layout. Flat, rectangular, white-background theme. */
 :root {
-  --bg: #0b0e14;
-  --bg-panel: rgba(18, 22, 31, 0.92);
-  --bg-panel-solid: #12161f;
-  --bg-elev: #1b212d;
-  --border: #2a3140;
-  --border-strong: #3a4354;
-  --text: #e6e9ef;
-  --text-dim: #8b93a7;
-  --text-faint: #5f677a;
-  --accent: #ff7a45;
-  --accent-dim: #b4532c;
-  --info: #4fc3f7;
-  --ok: #5bbf6a;
-  --warn: #ffb74d;
-  --danger: #ef5350;
-  --caveat-bg: rgba(255, 183, 77, 0.14);
-  --caveat-border: #ffb74d;
-  --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-  --radius: 10px;
-  --radius-sm: 6px;
-  color-scheme: dark;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #eef1f6;
-    --bg-panel: rgba(255, 255, 255, 0.95);
-    --bg-panel-solid: #ffffff;
-    --bg-elev: #f3f5f9;
-    --border: #d4d9e2;
-    --border-strong: #b7bdca;
-    --text: #1a1f2b;
-    --text-dim: #576072;
-    --text-faint: #8891a2;
-    --accent: #d4521f;
-    --accent-dim: #a53f15;
-    --caveat-bg: rgba(176, 108, 10, 0.12);
-    --caveat-border: #b06c0a;
-    --shadow: 0 6px 24px rgba(31, 41, 61, 0.18);
-    color-scheme: light;
-  }
+  --bg: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-panel-solid: #ffffff;
+  --bg-elev: #f2f3f5;
+  --border: #d0d5dd;
+  --border-strong: #aeb6c2;
+  --text: #16202e;
+  --text-dim: #51607a;
+  --text-faint: #8894a6;
+  --accent: #d4521f;
+  --accent-dim: #a53f15;
+  --info: #0b6bcb;
+  --ok: #2e7d32;
+  --warn: #a9690a;
+  --danger: #c62828;
+  --caveat-bg: #fff4e2;
+  --caveat-border: #a9690a;
+  --shadow: 0 1px 6px rgba(31, 41, 61, 0.12);
+  --radius: 0;
+  --radius-sm: 0;
+  color-scheme: light;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Rectangular UI: square corners everywhere in the app chrome. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
 }
 
 html,
