@@ -1,0 +1,35 @@
+{
+  "gate": "A1",
+  "title": "NASA Mars Trek \u2194 Cesium spatial alignment",
+  "tiling_scheme": "GeographicTilingScheme 2x1@z0, east-positive, clon=0",
+  "basemap_product": "Mars_Viking_MDIM21_ClrMosaic_global_232m",
+  "math_checks": [
+    {
+      "check": "grid_2x1_at_z0",
+      "ok": true,
+      "detail": "grid(0)=(2, 1)"
+    },
+    {
+      "check": "hemispheres_split",
+      "ok": true,
+      "detail": "west=(0, 0) east=(1, 0)"
+    },
+    {
+      "check": "seam_in_range",
+      "ok": true,
+      "detail": "\u00b1180\u00b0 maps to a valid column at z0/3/6"
+    },
+    {
+      "check": "poles_in_range",
+      "ok": true,
+      "detail": "lat=\u00b190\u00b0 maps to a valid row at z0/3/6"
+    }
+  ],
+  "live_checks": [],
+  "summary": {
+    "math_ok": true,
+    "live_ran": 0,
+    "live_skipped": 0,
+    "live_ok": null
+  }
+}

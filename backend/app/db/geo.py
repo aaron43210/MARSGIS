@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from sqlalchemy import text
 from sqlalchemy.sql import ColumnElement
 
 from app.db.models import Observation
@@ -87,11 +86,3 @@ def bbox_overlap_clause(bbox: tuple[float, float, float, float]) -> ColumnElemen
         & (Observation.maxy >= s)
         & (Observation.miny <= n)
     )
-
-
-def postgis_intersects_clause(bbox: tuple[float, float, float, float], srid: int = 104905):
-    """ST_Intersects predicate against the PostGIS geometry column (prod path)."""
-    w, s, e, n = bbox
-    return text(
-        "ST_Intersects(observation.geom, ST_MakeEnvelope(:w, :s, :e, :n, :srid))"
-    ).bindparams(w=w, s=s, e=e, n=n, srid=srid)

@@ -9,7 +9,7 @@ export interface SpectrumSeries {
   y: number[];
 }
 
-export interface SpectrumChartProps {
+interface SpectrumChartProps {
   /** Shared x axis (wavelength, nm). */
   x: number[];
   series: SpectrumSeries[];

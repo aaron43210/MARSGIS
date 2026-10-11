@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import AsyncIterator
 
-from fastapi import Depends, Request
+from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings, get_settings
@@ -24,10 +24,6 @@ def settings_dep() -> Settings:
 
 def get_job_runner(request: Request):
     return request.app.state.job_runner
-
-
-def get_engine_adapter(request: Request):
-    return request.app.state.engine_adapter
 
 
 def _client_ip(request: Request) -> str:
@@ -69,6 +65,3 @@ def require_api_key(request: Request) -> None:
             "A valid X-API-Key header is required",
             detail="This deployment has REQUIRE_API_KEY=true.",
         )
-
-
-SessionDep = Depends(get_session)

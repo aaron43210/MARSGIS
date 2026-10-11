@@ -50,13 +50,20 @@ FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
 LABEL org.opencontainers.image.title="marsgis-engine" \
       org.opencontainers.image.description="MarsGIS Spectral Angle Mapper engine (candidate matches, NOT confirmed deposits)" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.source="https://github.com/marsgis/marsgis"
+      org.opencontainers.image.source="https://github.com/aaron43210/MARSGIS"
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     GDAL_NUM_THREADS=ALL_CPUS \
     PROJ_NETWORK=OFF \
     MPLBACKEND=Agg
+# rasterio's manylinux wheel vendors GDAL/GEOS/PROJ but still dynamically links a
+# few base system libs that slim-bookworm omits. libexpat1 (libexpat.so.1) is
+# required by GDAL at runtime to write COG/GeoTIFF output — without it the engine
+# computes but cannot write results.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libexpat1 \
+    && rm -rf /var/lib/apt/lists/*
 RUN groupadd --gid 10001 app \
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin app
 COPY --from=builder /opt/venv /opt/venv

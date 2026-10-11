@@ -72,6 +72,20 @@ CANDIDATE_DISCLAIMER: str = (
     "and corroborating observations before any geologic claim."
 )
 
+#: Machine-readable scientific-honesty caveat about the reference/scene
+#: preprocessing mismatch. MICA type spectra are RATIOED I/F while scene pixels
+#: are un-ratioed I/F. Wavelength resampling aligns the band grids only -- it
+#: does NOT reconcile the ratioed-vs-unratioed difference. Surfaced in
+#: provenance (not only the human report) so API consumers and contract tests
+#: can assert its presence.
+PREPROCESSING_CAVEAT: str = (
+    "MICA reference spectra are ratioed I/F; scene pixels are un-ratioed I/F. "
+    "Resampling aligns the wavelength grids only -- it does not reconcile the "
+    "ratioed-vs-unratioed difference. SAM is albedo-scale invariant and "
+    "continuum removal (when enabled) mitigates band-shape mismatch, but the "
+    "difference is not fully eliminated; treat matches as spectral candidates."
+)
+
 # ---------------------------------------------------------------------------
 # Mars 2000 equirectangular FALLBACK WKT.
 #

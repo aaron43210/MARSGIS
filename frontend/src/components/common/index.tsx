@@ -77,23 +77,6 @@ export function Toggle({
   );
 }
 
-export function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  children: ReactNode;
-}): React.ReactElement {
-  return (
-    <label className="field" htmlFor={htmlFor}>
-      <span>{label}</span>
-      {children}
-    </label>
-  );
-}
-
 /** The required scientific-honesty caveat block (candidate match, not a confirmed deposit). */
 export function CaveatBlock({ text }: { text: string }): React.ReactElement {
   return (

@@ -10,7 +10,7 @@ import type { FootprintLayer } from '@/cesium/FootprintLayer';
 import type { ResultOverlay } from '@/cesium/ResultOverlay';
 import { flyToFeature, showFeatureMarker } from '@/cesium/markers';
 
-export interface CesiumManagers {
+interface CesiumManagers {
   viewer: Viewer;
   layerManager: LayerManager;
   footprintLayer: FootprintLayer;

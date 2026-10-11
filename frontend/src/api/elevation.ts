@@ -4,7 +4,7 @@
 import { apiFetch, isAbort } from './client';
 import { env } from '@/env';
 
-export interface ElevationResponse {
+interface ElevationResponse {
   lon: number;
   lat: number;
   elevation_m: number | null;

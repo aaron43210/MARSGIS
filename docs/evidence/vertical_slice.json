@@ -1,0 +1,30 @@
+{
+  "gate": "vertical-slice",
+  "observation": "frt00003e12",
+  "bbox_lonlat_wsen": [
+    76.9404,
+    22.1347,
+    77.2127,
+    22.3863
+  ],
+  "a1_tiling_math_ok": true,
+  "status": "ok",
+  "a2_real_cube_bands": 489,
+  "a2_bands_used": 238,
+  "a2_crs_is_fallback": false,
+  "candidate_crs_projected": true,
+  "candidate_center_lonlat": [
+    77.0765,
+    22.2605
+  ],
+  "candidate_bounds_lonlat_wsen": [
+    77.0726,
+    22.2568,
+    77.0804,
+    22.2641
+  ],
+  "spatial_correct_center_in_bbox": true,
+  "reproducible": true,
+  "detected_fraction": 1.0,
+  "note": "Detection fraction is not a correctness signal on a tiny uniform AOI; the gate is valid, correctly-placed, reproducible output on real data."
+}

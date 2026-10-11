@@ -10,8 +10,6 @@ import { API_ROUTES } from '@/types';
 import type {
   AnalysisJob,
   AnalysisJobCreate,
-  JobListResponse,
-  JobQuery,
   MineralListResponse,
   MineralQuery,
   SpectralReference,
@@ -51,19 +49,4 @@ export async function createJob(
 
 export async function getJob(id: string, signal?: AbortSignal): Promise<AnalysisJob> {
   return apiFetch<AnalysisJob>(API_ROUTES.analysisJob(id), { signal });
-}
-
-export async function listJobs(
-  query: JobQuery = {},
-  signal?: AbortSignal,
-): Promise<JobListResponse> {
-  return apiFetch<JobListResponse>(API_ROUTES.analysisJobs, {
-    query: {
-      status: query.status,
-      observation_id: query.observation_id,
-      limit: query.limit,
-      offset: query.offset,
-    },
-    signal,
-  });
 }

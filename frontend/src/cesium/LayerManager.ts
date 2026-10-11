@@ -31,7 +31,7 @@ export interface ILayerManagerViewer {
 }
 
 /** Factory from a MapLayer to a Cesium ImageryProvider; injectable for tests. */
-export type ProviderFactory = (layer: MapLayer) => unknown;
+type ProviderFactory = (layer: MapLayer) => unknown;
 
 export class LayerManager {
   private readonly viewer: ILayerManagerViewer;

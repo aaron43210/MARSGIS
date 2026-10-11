@@ -1,5 +1,5 @@
 import type { AppState, ImageryStackItem } from './types';
-import type { AnalysisResult, MapLayer, ObservationSummary } from '@/types';
+import type { AnalysisResult, MapLayer } from '@/types';
 
 /**
  * The imagery stack LayerManager reconciles, ordered bottom -> top:
@@ -21,18 +21,4 @@ export function selectImageryStack(state: AppState): ImageryStackItem[] {
 
 export function selectActiveResult(state: AppState): AnalysisResult | null {
   return state.activeResultId ? (state.results[state.activeResultId] ?? null) : null;
-}
-
-export function selectSelectedObservation(state: AppState): ObservationSummary | null {
-  const id = state.selectedObservationId;
-  if (!id) return null;
-  return state.observations.find((o) => o.id === id) ?? null;
-}
-
-export interface FootprintStyleState {
-  selectedId: string | null;
-  hoveredId: string | null;
-}
-export function selectFootprintStyleState(state: AppState): FootprintStyleState {
-  return { selectedId: state.selectedObservationId, hoveredId: state.hoveredObservationId };
 }

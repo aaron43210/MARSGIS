@@ -5,7 +5,6 @@
 // zod's default object behaviour strips unknown keys (it does not reject them), so these schemas
 // stay tolerant of additive backend changes while still catching missing/malformed critical fields.
 import { z } from 'zod';
-import type { Footprint } from '@/types';
 
 export function validate<T>(schema: z.ZodType, data: unknown): T {
   schema.parse(data);
@@ -27,7 +26,7 @@ const zLayerSource = z.object({
   max_zoom: z.number(),
 });
 
-export const zMapLayer = z.object({
+const zMapLayer = z.object({
   id: z.string().min(1),
   type: z.string(),
   title: z.string(),
@@ -47,9 +46,9 @@ const zMultiPolygon = z.object({
   type: z.literal('MultiPolygon'),
   coordinates: z.array(z.array(zRing)),
 });
-export const zFootprint = z.union([zPolygon, zMultiPolygon]);
+const zFootprint = z.union([zPolygon, zMultiPolygon]);
 
-export const zObservationSummary = z.object({
+const zObservationSummary = z.object({
   id: z.string().min(1),
   instrument: z.string(),
   product_type: z.string(),
@@ -91,8 +90,3 @@ export const zSpectralReference = z
   .refine((v) => v.wavelength.length === v.reflectance.length, {
     message: 'wavelength[] and reflectance[] must be equal length',
   });
-
-/** GeoJSON footprint validator used when drawing clickable polygons. */
-export function validateFootprint(d: unknown): Footprint {
-  return validate<Footprint>(zFootprint, d);
-}

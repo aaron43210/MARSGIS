@@ -1,0 +1,42 @@
+{
+  "gate": "validation-aoi",
+  "observation": "frt00003e12",
+  "locality": "Nili Fossae",
+  "independent_reference": "Ehlmann et al. 2008 (Science 322:1828); Mustard et al. 2009 (JGR 114:E00D12)",
+  "expectation": "olivine broad; carbonate present but localized; method discriminates",
+  "aoi_shape_bands_lines_samples": [
+    489,
+    384,
+    384
+  ],
+  "full_cube_shape_bands_lines_samples": [
+    489,
+    828,
+    843
+  ],
+  "aoi_has_real_crs": true,
+  "status": "ok",
+  "n_valid_pixels": 147456,
+  "threshold_rad": 0.1,
+  "bands_used": {
+    "carbonate": 238,
+    "olivine": 238,
+    "clay": 238
+  },
+  "detected_fraction": {
+    "carbonate": 0.82373046875,
+    "olivine": 0.3645358615451389,
+    "clay": 0.7462632921006944
+  },
+  "best_match_share": {
+    "carbonate": 0.19642469618055555,
+    "olivine": 0.2620849609375,
+    "clay": 0.5414903428819444
+  },
+  "checks": {
+    "carbonate_structured_not_saturated": true,
+    "discriminates_best_match_not_monopoly": true,
+    "olivine_broader_than_carbonate": true
+  },
+  "defensible": true
+}

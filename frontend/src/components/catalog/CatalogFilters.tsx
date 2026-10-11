@@ -7,6 +7,7 @@ export function CatalogFilters(): React.ReactElement {
   const filters = useStore((s) => s.filters);
   const setFilters = useStore((s) => s.setFilters);
   const loadObservations = useStore((s) => s.loadObservations);
+  const observations = useStore((s) => s.observations);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -38,13 +39,18 @@ export function CatalogFilters(): React.ReactElement {
       </label>
 
       <label className="field">
-        <span>Search (id / title)</span>
-        <input
-          type="search"
+        <span>Observation (id / title)</span>
+        <select
           value={filters.q ?? ''}
-          placeholder="e.g. carbonate, FRT…"
           onChange={(e) => setFilters({ q: e.target.value || undefined })}
-        />
+        >
+          <option value="">All observations</option>
+          {observations.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.id} — {o.title}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>

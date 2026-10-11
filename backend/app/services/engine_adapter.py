@@ -42,7 +42,6 @@ _CLASS_TO_ALIAS = {
 ANGLE_SUFFIX = "_SAM_angle.tif"
 CANDIDATE_SUFFIX = "_SAM_candidate.tif"
 PROVENANCE_SUFFIX = "_provenance.json"
-REPORT_SUFFIX = "_report.txt"
 
 
 @dataclass

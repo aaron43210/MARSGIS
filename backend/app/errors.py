@@ -36,11 +36,6 @@ class NotFoundError(AppError):
     code = "not_found"
 
 
-class BadRequestError(AppError):
-    status_code = 400
-    code = "bad_request"
-
-
 class ValidationErrorApp(AppError):
     status_code = 422
     code = "validation_error"
@@ -59,16 +54,6 @@ class ValidationErrorApp(AppError):
 class QuotaExceededError(AppError):
     status_code = 429
     code = "quota_exceeded"
-
-
-class JobLimitError(AppError):
-    status_code = 429
-    code = "job_limit_exceeded"
-
-
-class PayloadTooLargeError(AppError):
-    status_code = 413
-    code = "payload_too_large"
 
 
 class EngineError(AppError):

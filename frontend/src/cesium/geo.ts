@@ -74,11 +74,3 @@ export function centroidOfFeature(f: Footprint): [number, number] {
 export function centerOfBbox(bbox: BBox): [number, number] {
   return [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2];
 }
-
-/** Rough camera height (m) to frame a bbox span, clamped to sane Mars-scale bounds. */
-export function cameraHeightForBbox(bbox: BBox): number {
-  const spanDeg = Math.max(bbox[2] - bbox[0], bbox[3] - bbox[1], 0.1);
-  // ~59.3 km per degree on Mars; frame with ~3x padding.
-  const meters = spanDeg * 59300 * 3;
-  return Math.max(50_000, Math.min(8_000_000, meters));
-}

@@ -95,3 +95,37 @@ def test_continuum_removal_off_still_detects(tmp_path, syn_cube, syn_reference):
         mask = ds.read(1)
     for r, c in syn_cube.planted:
         assert mask[r, c] == config.CANDIDATE_MATCH
+
+
+def test_wavelength_alignment_ledger_is_consistent(tmp_path, syn_cube, syn_reference):
+    """A4: the band-drop funnel is auditable and internally consistent, and the
+    resampled grid never extrapolates beyond the reference coverage."""
+    res = _run(syn_cube, syn_reference, tmp_path)
+    record = json.loads(Path(res.provenance_path).read_text())
+    wa = record["wavelength_alignment"]
+
+    # The funnel balances: selected - out_of_coverage - resample_nonfinite = used.
+    assert (
+        wa["n_bands_selected"]
+        - wa["n_bands_dropped_out_of_reference_coverage"]
+        - wa["n_bands_dropped_resample_nonfinite"]
+        == wa["n_bands_used"]
+    )
+    # bands_used agrees with the parameters block and the recorded grid length.
+    assert wa["n_bands_used"] == record["parameters"]["bands_used"]
+    assert wa["n_bands_used"] == len(wa["bands_used_wavelengths_nm"])
+    assert wa["n_bands_used"] >= config.MIN_OVERLAP_BANDS
+
+    # No extrapolation: every used wavelength lies within the reference coverage.
+    lo, hi = wa["reference_coverage_nm"]
+    assert all(lo - 1e-6 <= w <= hi + 1e-6 for w in wa["bands_used_wavelengths_nm"])
+
+
+def test_preprocessing_caveat_is_machine_readable(tmp_path, syn_cube, syn_reference):
+    """A4: the ratioed-vs-unratioed limitation is a provenance field, not only
+    prose in the human report, so API consumers / contract tests can assert it."""
+    res = _run(syn_cube, syn_reference, tmp_path)
+    record = json.loads(Path(res.provenance_path).read_text())
+    caveat = record["preprocessing_caveat"].lower()
+    assert "ratioed" in caveat
+    assert record["preprocessing_caveat"] == config.PREPROCESSING_CAVEAT

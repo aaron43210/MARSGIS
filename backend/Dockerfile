@@ -45,7 +45,7 @@ FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
 LABEL org.opencontainers.image.title="marsgis-backend" \
       org.opencontainers.image.description="MarsGIS FastAPI backend (CRISM catalogue, SAM analysis jobs, on-the-fly result tiling)" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.source="https://github.com/marsgis/marsgis"
+      org.opencontainers.image.source="https://github.com/aaron43210/MARSGIS"
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
