@@ -1,0 +1,67 @@
+# MarsGIS frontend — nginx (unprivileged) config template.
+#
+# Processed by the stock nginx entrypoint: ${BACKEND_UPSTREAM} is replaced via
+# `envsubst` at container start (only names present in the environment are
+# substituted, so runtime nginx variables such as $uri / $host are left intact).
+server {
+    listen 8080;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Health endpoint for the container / compose healthcheck.
+    location = /healthz {
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+
+    # Reverse-proxy the API to the backend so the SPA runs same-origin
+    # (VITE_API_URL="/"). The /api prefix is preserved to the backend.
+    location /api/ {
+        proxy_pass ${BACKEND_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+    location = /openapi.json {
+        proxy_pass ${BACKEND_UPSTREAM}/openapi.json;
+        proxy_set_header Host $host;
+    }
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+    # Hashed, immutable build assets.
+    location /assets/ {
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # CesiumJS static assets (Workers/Assets/Widgets copied to dist/cesium by
+    # vite-plugin-static-copy); long-cache, served locally (no Cesium Ion).
+    location /cesium/ {
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # SPA entry + fallback. index.html is never cached so new deploys take effect.
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        # CSP permits CesiumJS web-workers + wasm (blob:, wasm-unsafe-eval), the
+        # same-origin backend, and the verified NASA Trek tile host. Tightens
+        # object/base. Adjust connect-src if the SPA calls data services directly.
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://trek.nasa.gov; connect-src 'self' https://trek.nasa.gov https://oderest.rsl.wustl.edu https://pds-geosciences.wustl.edu https://astrogeology.usgs.gov; font-src 'self' data:; object-src 'none'; base-uri 'self'" always;
+    }
+}

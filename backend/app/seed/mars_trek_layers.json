@@ -1,0 +1,83 @@
+{
+  "_comment": "MarsGIS basemap/overlay tile layers served by NASA Mars Trek WMTS. Verified reachable 2026-10-11 via per-product WMTSCapabilities (HTTP 200) and a z0 tile fetch. Owned by the data-access concern.",
+  "service": {
+    "name": "NASA Mars Trek WMTS (Equirectangular)",
+    "projection": "equirectangular (clon=0), IAU2000 Mars sphere",
+    "tile_matrix_set": "default028mm",
+    "style": "default",
+    "top_left_corner": [-180.0, 90.0],
+    "zoom0_grid": {"matrix_width": 2, "matrix_height": 1, "tile_px": 256},
+    "tile_template": "https://trek.nasa.gov/tiles/Mars/EQ/{product}/1.0.0//{Style}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.{ext}",
+    "capabilities_template": "https://trek.nasa.gov/tiles/Mars/EQ/{product}/1.0.0/WMTSCapabilities.xml",
+    "cesium_note": "Use Cesium UrlTemplateImageryProvider with url built from tile_template; {TileMatrix}=z, {TileRow}=y, {TileCol}=x. ext/format MUST be read from each product's capabilities ResourceURL (jpeg vs png differ per product).",
+    "catalog_search_api": "https://trek.nasa.gov/mars/TrekServices/ws/index/eq/searchItems?start=0&rows=2000 (JSON; docs[].productLabel is the {product} id)"
+  },
+  "layers": [
+    {
+      "role": "basemap_color",
+      "product": "Mars_Viking_MDIM21_ClrMosaic_global_232m",
+      "title": "Viking MDIM 2.1 Color Mosaic (232 m)",
+      "format": "image/jpeg",
+      "ext": "jpg",
+      "verified": true,
+      "example_tile": "https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0//default/default028mm/0/0/0.jpg"
+    },
+    {
+      "role": "basemap_relief",
+      "product": "Mars_MGS_MOLA_ClrShade_merge_global_463m",
+      "title": "MOLA Color Shaded Relief (463 m)",
+      "format": "image/jpeg",
+      "ext": "jpg",
+      "verified": true,
+      "example_tile": "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0//default/default028mm/0/0/0.jpg"
+    },
+    {
+      "role": "elevation_dem",
+      "product": "mola128_mola64_merge_90Nto90S_SimpleC_clon0",
+      "title": "MGS MOLA Global DEM",
+      "format": "image/png",
+      "ext": "png",
+      "verified": true,
+      "example_tile": "https://trek.nasa.gov/tiles/Mars/EQ/mola128_mola64_merge_90Nto90S_SimpleC_clon0/1.0.0//default/default028mm/0/0/0.png",
+      "note": "Visual (8-bit) DEM render for display. For true elevation values use the engine's MOLA raster, not these tiles."
+    },
+    {
+      "role": "thermal_day_ir",
+      "product": "THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018",
+      "title": "THEMIS Day IR Controlled Mosaic (100 m)",
+      "format": "image/png",
+      "ext": "png",
+      "verified": true,
+      "example_tile": "https://trek.nasa.gov/tiles/Mars/EQ/THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018/1.0.0//default/default028mm/0/0/0.png"
+    },
+    {
+      "role": "thermal_night_ir",
+      "product": "THEMIS_NightIR_ControlledMosaics_100m_v2_oct2018",
+      "title": "THEMIS Night IR Controlled Mosaic (100 m)",
+      "format": "image/png",
+      "ext": "png",
+      "verified": true,
+      "example_tile": "https://trek.nasa.gov/tiles/Mars/EQ/THEMIS_NightIR_ControlledMosaics_100m_v2_oct2018/1.0.0//default/default028mm/0/0/0.png",
+      "note": "Optional overlay. Night IR highlights thermal inertia (bedrock vs dust)."
+    },
+    {
+      "role": "surface_roughness",
+      "product": "mola_roughness",
+      "title": "MGS MOLA Global Surface Roughness",
+      "format": "image/png",
+      "ext": "png",
+      "verified": true,
+      "example_tile": "https://trek.nasa.gov/tiles/Mars/EQ/mola_roughness/1.0.0//default/default028mm/0/0/0.png",
+      "note": "Optional overlay."
+    },
+    {
+      "role": "elevation_dem_hires_blend",
+      "product": "Mars_MOLA_blend200ppx_HRSC_DEM_clon0dd_200mpp_lzw",
+      "title": "MOLA+HRSC Blended DEM (200 m) — NOT available at EQ WMTS",
+      "format": "unknown",
+      "ext": "unknown",
+      "verified": false,
+      "note": "ASSUMED id from Trek search index but WMTSCapabilities returned 404 at the Mars/EQ endpoint on 2026-10-11. Do not wire into the map until confirmed; use mola128_mola64_merge_90Nto90S_SimpleC_clon0 instead."
+    }
+  ]
+}

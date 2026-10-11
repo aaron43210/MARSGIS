@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "marsgis-backend"
+version = "1.0.0"
+description = "MarsGIS FastAPI backend: catalogue API, async SAM job runner, and on-the-fly Mars-geographic result tiling."
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "MarsGIS" }]
+dependencies = [
+    "fastapi==0.143.0",
+    "uvicorn[standard]==0.54.0",
+    "sqlmodel==0.0.48",
+    "sqlalchemy[asyncio]==2.1.4",
+    "alembic==1.20.0",
+    "pydantic==2.14.0",
+    "pydantic-settings==2.15.0",
+    "aiosqlite==0.21.0",
+    "asyncpg==0.31.0",
+    "psycopg[binary]==3.3.6",
+    "geoalchemy2==0.20.0",
+    "shapely==2.2.0",
+    "rasterio==1.5.2",
+    "rio-tiler==9.4.12",
+    "morecantile==7.1.0",
+    "numpy==2.5.4",
+    "httpx==0.28.1",
+    "anyio>=4.6",
+    "structlog==25.4.0",
+    "python-multipart==0.0.20",
+    "pyyaml==6.0.2",
+]
+
+[project.optional-dependencies]
+prod = ["arq==0.28.0", "redis==8.1.0"]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==0.26.0",
+    "ruff==0.14.0",
+    "mypy==1.18.0",
+]
+
+[project.scripts]
+marsgis-api = "app.cli:run_api"
+marsgis-worker = "app.worker:run_worker"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["seed/*.json", "db/seeds/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Consistent with the engine's rule set. E501 (line length) is handled by the
+# formatter; B008 is intentional — FastAPI's Depends()/Query()/Path() in
+# parameter defaults is the framework's documented dependency-injection idiom.
+select = ["E", "F", "I", "W", "B", "UP"]
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# app/schemas/* mirror the FROZEN shared contract (contracts/enums.json + the
+# generated OpenAPI + frontend/src/types). They are kept in a deliberate,
+# conservative style and must not be churned by lint: __init__ re-exports the
+# public API (F401); enums use the (str, Enum) base for stable pydantic/JSON
+# behaviour (UP042); the generic/optional spellings mirror the contract
+# (UP007/UP046).
+"app/schemas/*.py" = ["F401", "UP042", "UP007", "UP046"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+plugins = ["pydantic.mypy"]

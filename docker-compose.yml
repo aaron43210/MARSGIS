@@ -1,0 +1,163 @@
+# MarsGIS — primary multi-service orchestration (production-leaning base).
+#
+# Default `docker compose up` brings up: db (PostGIS) + backend + frontend.
+# Optional services are gated behind profiles:
+#   --profile worker  -> redis + arq worker (JOB_BACKEND=arq)
+#   --profile engine  -> standalone engine image for on-demand CLI runs
+#   --profile tiles   -> titiler sidecar (scale-out result tiling)
+#
+# ALL published ports are bound to 127.0.0.1: this dev stack is UNAUTHENTICATED.
+# Do not deploy as-is on a shared network; production needs auth + TLS behind a
+# gateway. See README.md and docs/DATA_LICENSES.md.
+name: marsgis
+
+x-restart-policy: &restart unless-stopped
+
+services:
+  db:
+    image: postgis/postgis:17-3.5 # arm64 (Apple Silicon): see docker/README.md (imresamu/postgis swap)
+    restart: *restart
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-marsgis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-marsgis}
+      POSTGRES_DB: ${POSTGRES_DB:-marsgis}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marsgis} -d ${POSTGRES_DB:-marsgis}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        PYTHON_VERSION: "3.12"
+    image: ghcr.io/${GHCR_OWNER:-marsgis}/marsgis-backend:${TAG:-dev}
+    restart: *restart
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://marsgis:marsgis@db:5432/marsgis}
+      STORAGE_ROOT: /data
+      JOB_BACKEND: ${JOB_BACKEND:-inprocess}
+      ENGINE_MODE: ${ENGINE_MODE:-inprocess}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - storage:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NODE_VERSION: "24"
+        VITE_API_URL: "/"
+        VITE_DEFAULT_BASEMAP: ${VITE_DEFAULT_BASEMAP:-viking}
+        VITE_USE_MOCKS: ${VITE_USE_MOCKS:-false}
+    image: ghcr.io/${GHCR_OWNER:-marsgis}/marsgis-frontend:${TAG:-dev}
+    restart: *restart
+    environment:
+      BACKEND_UPSTREAM: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8080}:8080"
+
+  # --- Optional: standalone engine image for on-demand CLI runs ----------------
+  # e.g.  docker compose --profile engine run --rm engine run \
+  #         --cube /work/sample/sample_crism_nili.img --mineral carbonate \
+  #         --out /data/results/manual
+  engine:
+    build:
+      context: ./engine
+      args:
+        PYTHON_VERSION: "3.12"
+    image: ghcr.io/${GHCR_OWNER:-marsgis}/marsgis-engine:${TAG:-dev}
+    restart: "no"
+    profiles: ["engine"]
+    volumes:
+      - storage:/data
+      - ./data:/work/data
+      - ./engine/sample_data:/work/sample:ro
+    command: ["--help"]
+
+  # --- Optional: production job queue (JOB_BACKEND=arq) ------------------------
+  redis:
+    image: redis:7-alpine
+    restart: *restart
+    profiles: ["worker"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+
+  worker:
+    build:
+      context: ./backend
+      args:
+        PYTHON_VERSION: "3.12"
+    image: ghcr.io/${GHCR_OWNER:-marsgis}/marsgis-backend:${TAG:-dev}
+    restart: *restart
+    profiles: ["worker"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://marsgis:marsgis@db:5432/marsgis}
+      STORAGE_ROOT: /data
+      JOB_BACKEND: arq
+      ENGINE_MODE: ${ENGINE_MODE:-inprocess}
+      REDIS_URL: redis://redis:6379/0
+    # Bypass the migrate-then-serve entrypoint; the arq worker runs the shared
+    # job body and writes to the same analysis_job table the API reads.
+    entrypoint: ["python", "-m", "app.worker"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - storage:/data
+
+  # --- Optional: titiler sidecar for scale-out result tiling -------------------
+  # ASSUMED image ref (pin by digest before any real deployment).
+  titiler:
+    image: ghcr.io/developmentseed/titiler:latest
+    restart: *restart
+    profiles: ["tiles"]
+    environment:
+      PORT: "8000"
+    ports:
+      - "127.0.0.1:${TITILER_PORT:-8001}:8000"
+
+volumes:
+  pgdata:
+  storage:

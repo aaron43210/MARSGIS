@@ -1,0 +1,41 @@
+{
+  "upload_type": "software",
+  "title": "MarsGIS",
+  "description": "<p>MarsGIS is an interactive Mars map/dashboard (a CesiumJS 3D Mars globe) with an integrated hyperspectral analysis engine that runs the Spectral Angle Mapper (SAM) on CRISM MTRDR cubes. The product fetches NASA data via services at runtime and does NOT redistribute NASA archives. Classification outputs are <strong>candidate spectral matches and are never presented as confirmed mineral deposits</strong>.</p>",
+  "license": "MIT",
+  "access_right": "open",
+  "keywords": [
+    "Mars",
+    "GIS",
+    "CesiumJS",
+    "hyperspectral",
+    "CRISM",
+    "Spectral Angle Mapper",
+    "Nili Fossae",
+    "planetary science"
+  ],
+  "creators": [
+    { "name": "Researcher, Student", "affiliation": "MSc capstone (placeholder)" },
+    { "name": "Name, Supervisor", "affiliation": "Supervisor (placeholder)" }
+  ],
+  "related_identifiers": [
+    {
+      "relation": "references",
+      "scheme": "url",
+      "identifier": "https://ode.rsl.wustl.edu/mars/",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "references",
+      "scheme": "url",
+      "identifier": "https://pds-geosciences.wustl.edu/missions/mro/crism.htm",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "references",
+      "scheme": "url",
+      "identifier": "https://trek.nasa.gov/mars/",
+      "resource_type": "dataset"
+    }
+  ]
+}

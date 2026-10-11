@@ -1,0 +1,2188 @@
+# GENERATED from backend/app/schemas via contracts/gen_openapi.py - do not hand-edit.
+openapi: 3.1.0
+info:
+  title: MarsGIS API
+  version: 1.0.0
+  description: Shared REST contract for MarsGIS (frontend/backend/engine). Coordinates are Mars IAU 2000
+    degrees, not Earth WGS84. Generated from backend/app/schemas (Pydantic) - do not hand-edit components.
+servers:
+- url: http://localhost:8000
+  description: local dev
+- url: /
+  description: same-origin (containerized)
+tags:
+- name: system
+- name: map
+- name: catalog
+- name: analysis
+paths:
+  /api/health:
+    get:
+      tags:
+      - system
+      operationId: getHealth
+      summary: Liveness/readiness + component status + implemented algorithms.
+      responses:
+        '200':
+          description: Service health
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/layers:
+    get:
+      tags:
+      - map
+      operationId: listLayers
+      summary: Catalog of base + overlay map layers (incl. VERIFIED NASA Trek basemaps).
+      parameters:
+      - name: type
+        in: query
+        required: false
+        description: filter by layer type
+        schema:
+          type: string
+          enum:
+          - basemap
+          - wmts
+          - xyz
+          - result_tiles
+          - geojson_overlay
+      - name: is_base
+        in: query
+        required: false
+        description: only base / only overlay layers
+        schema:
+          type: boolean
+      - name: availability
+        in: query
+        required: false
+        description: filter by availability
+        schema:
+          type: string
+          enum:
+          - verified
+          - unconfirmed
+          - unavailable
+      responses:
+        '200':
+          description: Layer catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayerList'
+  /api/observations:
+    get:
+      tags:
+      - catalog
+      operationId: listObservations
+      summary: Search observations (paginated).
+      parameters:
+      - name: instrument
+        in: query
+        required: false
+        description: instrument
+        schema:
+          type: string
+          enum:
+          - CRISM
+          - CTX
+          - HiRISE
+          - HRSC
+          - OMEGA
+          - THEMIS
+          - MOLA
+      - name: product_type
+        in: query
+        required: false
+        description: product type
+        schema:
+          type: string
+          enum:
+          - MTRDR
+          - TRDR
+          - DDR
+          - MOSAIC
+          - DEM
+          - ORTHOIMAGE
+          - BASEMAP
+      - name: region
+        in: query
+        required: false
+        description: named region, e.g. 'Nili Fossae'
+        schema:
+          type: string
+      - name: bbox
+        in: query
+        required: false
+        description: spatial filter 'west,south,east,north' (Mars deg)
+        schema:
+          type: string
+      - name: suitable
+        in: query
+        required: false
+        description: only analysis_suitable observations
+        schema:
+          type: boolean
+      - name: q
+        in: query
+        required: false
+        description: free-text match on id/title
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        description: page size (default 50, max 200)
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        required: false
+        description: page offset
+        schema:
+          type: integer
+      - name: sort
+        in: query
+        required: false
+        description: sort key
+        schema:
+          type: string
+          enum:
+          - acquired_at
+          - -acquired_at
+          - id
+          - resolution_m
+          - -resolution_m
+      responses:
+        '200':
+          description: Matching observations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservationPage'
+        '422': &id002
+          $ref: '#/components/responses/ValidationError'
+  /api/observations/{id}:
+    get:
+      tags:
+      - catalog
+      operationId: getObservation
+      summary: Full observation record.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: native observation id
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Observation'
+        '404': &id001
+          $ref: '#/components/responses/NotFound'
+  /api/minerals:
+    get:
+      tags:
+      - catalog
+      operationId: listMinerals
+      summary: Spectral reference library summaries (no sample arrays).
+      parameters:
+      - name: class
+        in: query
+        required: false
+        description: mineral class
+        schema:
+          type: string
+          enum:
+          - carbonate
+          - olivine
+          - phyllosilicate
+          - pyroxene
+          - sulfate
+          - iron_oxide
+          - hydrated_silica
+          - other
+      - name: source
+        in: query
+        required: false
+        description: library source
+        schema:
+          type: string
+      - name: q
+        in: query
+        required: false
+        description: free-text match
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Reference library
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MineralList'
+  /api/minerals/{id}:
+    get:
+      tags:
+      - catalog
+      operationId: getMineral
+      summary: Full reference spectrum incl. wavelength[]/reflectance[].
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: reference id
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpectralReference'
+        '404': *id001
+  /api/analysis-jobs:
+    get:
+      tags:
+      - analysis
+      operationId: listJobs
+      summary: List jobs (paginated).
+      parameters:
+      - name: status
+        in: query
+        required: false
+        description: filter by status
+        schema:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+      - name: observation_id
+        in: query
+        required: false
+        description: filter by observation
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        description: page size
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        required: false
+        description: page offset
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPage'
+    post:
+      tags:
+      - analysis
+      operationId: createJob
+      summary: Create an analysis job (async). Returns 202 queued.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: optional dedupe key
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisJobCreate'
+      responses:
+        '202':
+          description: Job queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisJob'
+          headers:
+            Location:
+              description: job resource url
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404': *id001
+        '422': *id002
+  /api/analysis-jobs/{id}:
+    get:
+      tags:
+      - analysis
+      operationId: getJob
+      summary: Poll job status/progress; result_id set when succeeded, error when failed.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: job id
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisJob'
+        '404': *id001
+  /api/results/{id}:
+    get:
+      tags:
+      - analysis
+      operationId: getResult
+      summary: Result incl. rasters, bounds, legend, summary_stats and ready-to-add map_layer.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: result id
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResult'
+        '404': *id001
+  /api/results/{id}/download:
+    get:
+      tags:
+      - analysis
+      operationId: downloadResult
+      summary: Download a result raster asset as a Cloud-Optimized GeoTIFF.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: result id
+        schema:
+          type: string
+      - name: asset
+        in: query
+        required: false
+        description: which raster
+        schema:
+          type: string
+          enum:
+          - primary_metric
+          - sam_angle
+          - detection_mask
+          - match_score
+      responses:
+        '200':
+          description: COG
+          content:
+            image/tiff; application=geotiff; profile=cloud-optimized:
+              schema:
+                type: string
+                format: binary
+        '404': *id001
+  /api/results/{id}/tiles/{z}/{x}/{y}.png:
+    get:
+      tags:
+      - analysis
+      - map
+      operationId: getResultTile
+      summary: Rendered PNG tile (geographic scheme, 2x1@z0, zxy) for Cesium overlay.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: result id
+        schema:
+          type: string
+      - name: z
+        in: path
+        required: true
+        description: zoom
+        schema:
+          type: integer
+      - name: x
+        in: path
+        required: true
+        description: column
+        schema:
+          type: integer
+      - name: y
+        in: path
+        required: true
+        description: row (north origin)
+        schema:
+          type: integer
+      - name: colormap
+        in: query
+        required: false
+        description: override colormap
+        schema:
+          type: string
+      - name: rescale
+        in: query
+        required: false
+        description: override value range 'min,max'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: tile
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '204':
+          description: empty tile (no coverage)
+        '404': *id001
+  /api/provenance/{id}:
+    get:
+      tags:
+      - analysis
+      operationId: getProvenance
+      summary: Reproducibility record for a result (software versions, source ids, steps).
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: provenance id (from AnalysisResult.provenance_id)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provenance'
+        '404': *id001
+components:
+  schemas:
+    AnalysisAlgorithm:
+      enum:
+      - SAM
+      - SID
+      - BAND_RATIO
+      title: AnalysisAlgorithm
+      type: string
+    AnalysisJob:
+      additionalProperties: false
+      properties:
+        id:
+          title: Id
+          type: string
+        observation_id:
+          title: Observation Id
+          type: string
+        algorithm:
+          $ref: '#/components/schemas/AnalysisAlgorithm'
+        reference_id:
+          title: Reference Id
+          type: string
+        params:
+          $ref: '#/components/schemas/SamParams'
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        progress:
+          default: 0.0
+          maximum: 1.0
+          minimum: 0.0
+          title: Progress
+          type: number
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Message
+        result_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Result Id
+        error:
+          anyOf:
+          - $ref: '#/components/schemas/JobError'
+          - type: 'null'
+          default: null
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+        started_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          default: null
+          title: Started At
+        finished_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          default: null
+          title: Finished At
+      required:
+      - id
+      - observation_id
+      - algorithm
+      - reference_id
+      - params
+      - status
+      - created_at
+      - updated_at
+      title: AnalysisJob
+      type: object
+    AnalysisJobCreate:
+      additionalProperties: false
+      properties:
+        observation_id:
+          title: Observation Id
+          type: string
+        algorithm:
+          $ref: '#/components/schemas/AnalysisAlgorithm'
+          default: SAM
+        reference_id:
+          title: Reference Id
+          type: string
+        params:
+          anyOf:
+          - $ref: '#/components/schemas/SamParams'
+          - type: 'null'
+          default: null
+      required:
+      - observation_id
+      - reference_id
+      title: AnalysisJobCreate
+      type: object
+    AnalysisResult:
+      additionalProperties: false
+      properties:
+        id:
+          title: Id
+          type: string
+        job_id:
+          title: Job Id
+          type: string
+        observation_id:
+          title: Observation Id
+          type: string
+        algorithm:
+          $ref: '#/components/schemas/AnalysisAlgorithm'
+        reference_id:
+          title: Reference Id
+          type: string
+        mineral:
+          title: Mineral
+          type: string
+        rasters:
+          $ref: '#/components/schemas/ResultRasters'
+        bounds:
+          maxItems: 4
+          minItems: 4
+          prefixItems:
+          - type: number
+          - type: number
+          - type: number
+          - type: number
+          title: Bounds
+          type: array
+        value_range:
+          maxItems: 2
+          minItems: 2
+          prefixItems:
+          - type: number
+          - type: number
+          title: Value Range
+          type: array
+        legend:
+          $ref: '#/components/schemas/Legend'
+        summary_stats:
+          $ref: '#/components/schemas/SummaryStats'
+        map_layer:
+          $ref: '#/components/schemas/MapLayer'
+        provenance_id:
+          title: Provenance Id
+          type: string
+        caveat:
+          title: Caveat
+          type: string
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+      required:
+      - id
+      - job_id
+      - observation_id
+      - algorithm
+      - reference_id
+      - mineral
+      - rasters
+      - bounds
+      - value_range
+      - legend
+      - summary_stats
+      - map_layer
+      - provenance_id
+      - caveat
+      - created_at
+      - updated_at
+      title: AnalysisResult
+      type: object
+    AssetRole:
+      enum:
+      - primary_metric
+      - sam_angle
+      - detection_mask
+      - match_score
+      title: AssetRole
+      type: string
+    AvailabilityStatus:
+      enum:
+      - verified
+      - unconfirmed
+      - unavailable
+      title: AvailabilityStatus
+      type: string
+    ErrorResponse:
+      additionalProperties: false
+      description: Uniform error body for every non-2xx response (incl. 422 validation).
+      properties:
+        code:
+          title: Code
+          type: string
+        message:
+          title: Message
+          type: string
+        detail:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Detail
+        request_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Request Id
+        errors:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/FieldError'
+            type: array
+          - type: 'null'
+          default: null
+          title: Errors
+      required:
+      - code
+      - message
+      title: ErrorResponse
+      type: object
+    FieldError:
+      additionalProperties: false
+      properties:
+        field:
+          title: Field
+          type: string
+        message:
+          title: Message
+          type: string
+      required:
+      - field
+      - message
+      title: FieldError
+      type: object
+    GeoJSONMultiPolygon:
+      additionalProperties: false
+      properties:
+        type:
+          const: MultiPolygon
+          default: MultiPolygon
+          title: Type
+          type: string
+        coordinates:
+          items:
+            items:
+              items:
+                items:
+                  type: number
+                type: array
+              type: array
+            type: array
+          title: Coordinates
+          type: array
+      required:
+      - coordinates
+      title: GeoJSONMultiPolygon
+      type: object
+    GeoJSONPolygon:
+      additionalProperties: false
+      properties:
+        type:
+          const: Polygon
+          default: Polygon
+          title: Type
+          type: string
+        coordinates:
+          items:
+            items:
+              items:
+                type: number
+              type: array
+            type: array
+          title: Coordinates
+          type: array
+      required:
+      - coordinates
+      title: GeoJSONPolygon
+      type: object
+    HealthComponent:
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        detail:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Detail
+        latency_ms:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Latency Ms
+      required:
+      - status
+      title: HealthComponent
+      type: object
+    HealthComponents:
+      additionalProperties: false
+      properties:
+        db:
+          $ref: '#/components/schemas/HealthComponent'
+        engine:
+          $ref: '#/components/schemas/HealthComponent'
+        tiler:
+          $ref: '#/components/schemas/HealthComponent'
+        queue:
+          $ref: '#/components/schemas/HealthComponent'
+      required:
+      - db
+      - engine
+      - tiler
+      - queue
+      title: HealthComponents
+      type: object
+    HealthResponse:
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        version:
+          title: Version
+          type: string
+        contract_version:
+          default: 1.0.0
+          title: Contract Version
+          type: string
+        git_sha:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Git Sha
+        time:
+          format: date-time
+          title: Time
+          type: string
+        components:
+          $ref: '#/components/schemas/HealthComponents'
+        implemented_algorithms:
+          items:
+            type: string
+          title: Implemented Algorithms
+          type: array
+      required:
+      - status
+      - version
+      - time
+      - components
+      title: HealthResponse
+      type: object
+    HealthStatus:
+      enum:
+      - ok
+      - degraded
+      - down
+      title: HealthStatus
+      type: string
+    Histogram:
+      additionalProperties: false
+      properties:
+        bin_edges:
+          items:
+            type: number
+          title: Bin Edges
+          type: array
+        counts:
+          items:
+            type: integer
+          title: Counts
+          type: array
+      required:
+      - bin_edges
+      - counts
+      title: Histogram
+      type: object
+    InstrumentType:
+      enum:
+      - CRISM
+      - CTX
+      - HiRISE
+      - HRSC
+      - OMEGA
+      - THEMIS
+      - MOLA
+      title: InstrumentType
+      type: string
+    JobError:
+      additionalProperties: false
+      properties:
+        code:
+          title: Code
+          type: string
+        message:
+          title: Message
+          type: string
+        detail:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Detail
+        retriable:
+          default: false
+          title: Retriable
+          type: boolean
+      required:
+      - code
+      - message
+      title: JobError
+      type: object
+    JobPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AnalysisJob'
+          title: Items
+          type: array
+        total:
+          minimum: 0
+          title: Total
+          type: integer
+        limit:
+          minimum: 1
+          title: Limit
+          type: integer
+        offset:
+          minimum: 0
+          title: Offset
+          type: integer
+        next_offset:
+          anyOf:
+          - minimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Next Offset
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: JobPage
+      type: object
+    JobStatus:
+      enum:
+      - queued
+      - running
+      - succeeded
+      - failed
+      title: JobStatus
+      type: string
+    LayerAvailability:
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/AvailabilityStatus'
+        checked_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          default: null
+          title: Checked At
+        sample_tile_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Sample Tile Url
+        http_status:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Http Status
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Note
+      required:
+      - status
+      title: LayerAvailability
+      type: object
+    LayerList:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/MapLayer'
+          title: Items
+          type: array
+      required:
+      - items
+      title: LayerList
+      type: object
+    LayerSource:
+      additionalProperties: false
+      properties:
+        url_template:
+          title: Url Template
+          type: string
+        tiling_scheme:
+          $ref: '#/components/schemas/TilingScheme'
+          default: geographic
+        tile_order:
+          $ref: '#/components/schemas/TileOrder'
+        tile_size:
+          default: 256
+          title: Tile Size
+          type: integer
+        file_extension:
+          enum:
+          - jpg
+          - png
+          title: File Extension
+          type: string
+        level_zero_tiles_x:
+          default: 2
+          title: Level Zero Tiles X
+          type: integer
+        level_zero_tiles_y:
+          default: 1
+          title: Level Zero Tiles Y
+          type: integer
+        min_zoom:
+          default: 0
+          title: Min Zoom
+          type: integer
+        max_zoom:
+          title: Max Zoom
+          type: integer
+        subdomains:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Subdomains
+        tile_matrix_set:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Tile Matrix Set
+        request_headers:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          default: null
+          title: Request Headers
+        provider:
+          title: Provider
+          type: string
+      required:
+      - url_template
+      - tile_order
+      - file_extension
+      - max_zoom
+      - provider
+      title: LayerSource
+      type: object
+    LayerStyle:
+      additionalProperties: false
+      properties:
+        opacity:
+          default: 1.0
+          maximum: 1.0
+          minimum: 0.0
+          title: Opacity
+          type: number
+        colormap:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Colormap
+        value_range:
+          anyOf:
+          - maxItems: 2
+            minItems: 2
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+          - type: 'null'
+          default: null
+          title: Value Range
+        z_index:
+          default: 0
+          title: Z Index
+          type: integer
+      title: LayerStyle
+      type: object
+    LayerType:
+      enum:
+      - basemap
+      - wmts
+      - xyz
+      - result_tiles
+      - geojson_overlay
+      title: LayerType
+      type: string
+    Legend:
+      additionalProperties: false
+      properties:
+        title:
+          title: Title
+          type: string
+        type:
+          $ref: '#/components/schemas/LegendType'
+        colormap:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Colormap
+        value_range:
+          anyOf:
+          - maxItems: 2
+            minItems: 2
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+          - type: 'null'
+          default: null
+          title: Value Range
+        units:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Units
+        stops:
+          items:
+            $ref: '#/components/schemas/LegendStop'
+          title: Stops
+          type: array
+        nodata_label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Nodata Label
+        caveat:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Caveat
+      required:
+      - title
+      - type
+      title: Legend
+      type: object
+    LegendStop:
+      additionalProperties: false
+      properties:
+        value:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Value
+        color:
+          title: Color
+          type: string
+        label:
+          title: Label
+          type: string
+      required:
+      - color
+      - label
+      title: LegendStop
+      type: object
+    LegendType:
+      enum:
+      - continuous
+      - categorical
+      title: LegendType
+      type: string
+    LonLat:
+      additionalProperties: false
+      properties:
+        lon:
+          maximum: 180.0
+          minimum: -180.0
+          title: Lon
+          type: number
+        lat:
+          maximum: 90.0
+          minimum: -90.0
+          title: Lat
+          type: number
+      required:
+      - lon
+      - lat
+      title: LonLat
+      type: object
+    MapLayer:
+      additionalProperties: false
+      properties:
+        id:
+          title: Id
+          type: string
+        type:
+          $ref: '#/components/schemas/LayerType'
+        title:
+          title: Title
+          type: string
+        subtitle:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Subtitle
+        is_base:
+          default: false
+          title: Is Base
+          type: boolean
+        default_visible:
+          default: false
+          title: Default Visible
+          type: boolean
+        source:
+          $ref: '#/components/schemas/LayerSource'
+        style:
+          $ref: '#/components/schemas/LayerStyle'
+        attribution:
+          title: Attribution
+          type: string
+        availability:
+          $ref: '#/components/schemas/LayerAvailability'
+        bounds:
+          anyOf:
+          - maxItems: 4
+            minItems: 4
+            prefixItems:
+            - type: number
+            - type: number
+            - type: number
+            - type: number
+            type: array
+          - type: 'null'
+          default: null
+          title: Bounds
+        legend:
+          anyOf:
+          - $ref: '#/components/schemas/Legend'
+          - type: 'null'
+          default: null
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+      required:
+      - id
+      - type
+      - title
+      - source
+      - style
+      - attribution
+      - availability
+      - created_at
+      - updated_at
+      title: MapLayer
+      type: object
+    MineralClass:
+      enum:
+      - carbonate
+      - olivine
+      - phyllosilicate
+      - pyroxene
+      - sulfate
+      - iron_oxide
+      - hydrated_silica
+      - other
+      title: MineralClass
+      type: string
+    MineralList:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/SpectralReferenceSummary'
+          title: Items
+          type: array
+      required:
+      - items
+      title: MineralList
+      type: object
+    Observation:
+      additionalProperties: false
+      properties:
+        id:
+          description: Native observation id, e.g. 'FRT00003E12'
+          title: Id
+          type: string
+        instrument:
+          $ref: '#/components/schemas/InstrumentType'
+        product_type:
+          $ref: '#/components/schemas/ProductType'
+        title:
+          title: Title
+          type: string
+        provider:
+          title: Provider
+          type: string
+        region:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Region
+        bbox:
+          maxItems: 4
+          minItems: 4
+          prefixItems:
+          - type: number
+          - type: number
+          - type: number
+          - type: number
+          title: Bbox
+          type: array
+        center:
+          $ref: '#/components/schemas/LonLat'
+        footprint:
+          anyOf:
+          - $ref: '#/components/schemas/GeoJSONPolygon'
+          - $ref: '#/components/schemas/GeoJSONMultiPolygon'
+          title: Footprint
+        acquired_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          default: null
+          title: Acquired At
+        resolution_m:
+          anyOf:
+          - exclusiveMinimum: 0.0
+            type: number
+          - type: 'null'
+          default: null
+          title: Resolution M
+        analysis_suitable:
+          title: Analysis Suitable
+          type: boolean
+        thumbnail_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Thumbnail Url
+        target:
+          const: Mars
+          default: Mars
+          title: Target
+          type: string
+        dataset_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Dataset Id
+        spectral:
+          anyOf:
+          - $ref: '#/components/schemas/SpectralSummary'
+          - type: 'null'
+          default: null
+        quality:
+          $ref: '#/components/schemas/QualityFlags'
+        source_url:
+          description: Service URL to fetch/describe the product (not a bulk archive).
+          title: Source Url
+          type: string
+        browse_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Browse Url
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+      required:
+      - id
+      - instrument
+      - product_type
+      - title
+      - provider
+      - bbox
+      - center
+      - footprint
+      - analysis_suitable
+      - quality
+      - source_url
+      - created_at
+      - updated_at
+      title: Observation
+      type: object
+    ObservationPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ObservationSummary'
+          title: Items
+          type: array
+        total:
+          minimum: 0
+          title: Total
+          type: integer
+        limit:
+          minimum: 1
+          title: Limit
+          type: integer
+        offset:
+          minimum: 0
+          title: Offset
+          type: integer
+        next_offset:
+          anyOf:
+          - minimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Next Offset
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: ObservationPage
+      type: object
+    ObservationSummary:
+      additionalProperties: false
+      properties:
+        id:
+          description: Native observation id, e.g. 'FRT00003E12'
+          title: Id
+          type: string
+        instrument:
+          $ref: '#/components/schemas/InstrumentType'
+        product_type:
+          $ref: '#/components/schemas/ProductType'
+        title:
+          title: Title
+          type: string
+        provider:
+          title: Provider
+          type: string
+        region:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Region
+        bbox:
+          maxItems: 4
+          minItems: 4
+          prefixItems:
+          - type: number
+          - type: number
+          - type: number
+          - type: number
+          title: Bbox
+          type: array
+        center:
+          $ref: '#/components/schemas/LonLat'
+        footprint:
+          anyOf:
+          - $ref: '#/components/schemas/GeoJSONPolygon'
+          - $ref: '#/components/schemas/GeoJSONMultiPolygon'
+          title: Footprint
+        acquired_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          default: null
+          title: Acquired At
+        resolution_m:
+          anyOf:
+          - exclusiveMinimum: 0.0
+            type: number
+          - type: 'null'
+          default: null
+          title: Resolution M
+        analysis_suitable:
+          title: Analysis Suitable
+          type: boolean
+        thumbnail_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Thumbnail Url
+      required:
+      - id
+      - instrument
+      - product_type
+      - title
+      - provider
+      - bbox
+      - center
+      - footprint
+      - analysis_suitable
+      title: ObservationSummary
+      type: object
+    ProductType:
+      enum:
+      - MTRDR
+      - TRDR
+      - DDR
+      - MOSAIC
+      - DEM
+      - ORTHOIMAGE
+      - BASEMAP
+      title: ProductType
+      type: string
+    Provenance:
+      additionalProperties: false
+      properties:
+        id:
+          title: Id
+          type: string
+        result_id:
+          title: Result Id
+          type: string
+        job_id:
+          title: Job Id
+          type: string
+        observation_id:
+          title: Observation Id
+          type: string
+        reference_id:
+          title: Reference Id
+          type: string
+        engine_image:
+          description: ghcr.io/<account>/marsgis-engine:<tag>
+          title: Engine Image
+          type: string
+        engine_version:
+          title: Engine Version
+          type: string
+        software:
+          items:
+            $ref: '#/components/schemas/SoftwareComponent'
+          title: Software
+          type: array
+        source_ids:
+          items:
+            type: string
+          title: Source Ids
+          type: array
+        source_urls:
+          items:
+            type: string
+          title: Source Urls
+          type: array
+        steps:
+          items:
+            $ref: '#/components/schemas/ProvenanceStep'
+          title: Steps
+          type: array
+        params:
+          additionalProperties: true
+          title: Params
+          type: object
+        inputs_checksums:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          default: null
+          title: Inputs Checksums
+        outputs_checksums:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          default: null
+          title: Outputs Checksums
+        started_at:
+          format: date-time
+          title: Started At
+          type: string
+        finished_at:
+          format: date-time
+          title: Finished At
+          type: string
+        timestamp:
+          format: date-time
+          title: Timestamp
+          type: string
+        caveat:
+          title: Caveat
+          type: string
+      required:
+      - id
+      - result_id
+      - job_id
+      - observation_id
+      - reference_id
+      - engine_image
+      - engine_version
+      - started_at
+      - finished_at
+      - timestamp
+      - caveat
+      title: Provenance
+      type: object
+    ProvenanceStep:
+      additionalProperties: false
+      properties:
+        order:
+          minimum: 0
+          title: Order
+          type: integer
+        name:
+          title: Name
+          type: string
+        software:
+          title: Software
+          type: string
+        version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Version
+        params:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Params
+        started_at:
+          format: date-time
+          title: Started At
+          type: string
+        finished_at:
+          format: date-time
+          title: Finished At
+          type: string
+        status:
+          $ref: '#/components/schemas/ProvenanceStepStatus'
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Message
+      required:
+      - order
+      - name
+      - software
+      - started_at
+      - finished_at
+      - status
+      title: ProvenanceStep
+      type: object
+    ProvenanceStepStatus:
+      enum:
+      - succeeded
+      - failed
+      title: ProvenanceStepStatus
+      type: string
+    QualityFlags:
+      additionalProperties: false
+      properties:
+        has_known_artifacts:
+          default: false
+          title: Has Known Artifacts
+          type: boolean
+        spike_corrected:
+          default: false
+          title: Spike Corrected
+          type: boolean
+        atmospherically_corrected:
+          default: false
+          title: Atmospherically Corrected
+          type: boolean
+        photometrically_corrected:
+          default: false
+          title: Photometrically Corrected
+          type: boolean
+        score:
+          anyOf:
+          - maximum: 1.0
+            minimum: 0.0
+            type: number
+          - type: 'null'
+          default: null
+          title: Score
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Notes
+      title: QualityFlags
+      type: object
+    RasterAsset:
+      additionalProperties: false
+      properties:
+        href:
+          title: Href
+          type: string
+        role:
+          $ref: '#/components/schemas/AssetRole'
+        media_type:
+          default: image/tiff; application=geotiff; profile=cloud-optimized
+          title: Media Type
+          type: string
+        units:
+          title: Units
+          type: string
+        value_range:
+          anyOf:
+          - maxItems: 2
+            minItems: 2
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+          - type: 'null'
+          default: null
+          title: Value Range
+        nodata:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Nodata
+        width:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Width
+        height:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Height
+        size_bytes:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Size Bytes
+      required:
+      - href
+      - role
+      - units
+      title: RasterAsset
+      type: object
+    ResultRasters:
+      additionalProperties: false
+      properties:
+        cog:
+          $ref: '#/components/schemas/RasterAsset'
+        angle:
+          $ref: '#/components/schemas/RasterAsset'
+        mask:
+          $ref: '#/components/schemas/RasterAsset'
+        score:
+          anyOf:
+          - $ref: '#/components/schemas/RasterAsset'
+          - type: 'null'
+          default: null
+      required:
+      - cog
+      - angle
+      - mask
+      title: ResultRasters
+      type: object
+    SamParams:
+      additionalProperties: false
+      description: SAM parameters; all optional so create bodies may send a subset.
+      properties:
+        threshold_rad:
+          default: 0.1
+          exclusiveMinimum: 0.0
+          maximum: 1.5707963267948966
+          title: Threshold Rad
+          type: number
+        continuum_removed:
+          default: false
+          title: Continuum Removed
+          type: boolean
+        wavelength_subset_nm:
+          anyOf:
+          - maxItems: 2
+            minItems: 2
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+          - type: 'null'
+          default:
+          - 1000.0
+          - 2600.0
+          title: Wavelength Subset Nm
+        bands:
+          anyOf:
+          - items:
+              type: integer
+            type: array
+          - type: 'null'
+          default: null
+          title: Bands
+        output_resolution_m:
+          anyOf:
+          - exclusiveMinimum: 0.0
+            type: number
+          - type: 'null'
+          default: null
+          title: Output Resolution M
+      title: SamParams
+      type: object
+    SoftwareComponent:
+      additionalProperties: false
+      properties:
+        name:
+          title: Name
+          type: string
+        version:
+          title: Version
+          type: string
+      required:
+      - name
+      - version
+      title: SoftwareComponent
+      type: object
+    SpectralReference:
+      additionalProperties: false
+      properties:
+        id:
+          description: slug, e.g. 'mica_carbonate_calcite'
+          title: Id
+          type: string
+        mineral:
+          title: Mineral
+          type: string
+        mineral_class:
+          $ref: '#/components/schemas/MineralClass'
+        source:
+          title: Source
+          type: string
+        source_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Source Id
+        spectrum_type:
+          $ref: '#/components/schemas/SpectrumType'
+        resampled_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Resampled To
+        point_count:
+          minimum: 2
+          title: Point Count
+          type: integer
+        wavelength_min_nm:
+          title: Wavelength Min Nm
+          type: number
+        wavelength_max_nm:
+          title: Wavelength Max Nm
+          type: number
+        diagnostic_features_nm:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          default: null
+          title: Diagnostic Features Nm
+        color:
+          pattern: ^#(?:[0-9a-fA-F]{6})$
+          title: Color
+          type: string
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+        wavelength_unit:
+          const: nm
+          default: nm
+          title: Wavelength Unit
+          type: string
+        wavelength:
+          description: Ascending; same length as reflectance.
+          items:
+            type: number
+          title: Wavelength
+          type: array
+        reflectance:
+          items:
+            type: number
+          title: Reflectance
+          type: array
+      required:
+      - id
+      - mineral
+      - mineral_class
+      - source
+      - spectrum_type
+      - point_count
+      - wavelength_min_nm
+      - wavelength_max_nm
+      - color
+      - created_at
+      - updated_at
+      - wavelength
+      - reflectance
+      title: SpectralReference
+      type: object
+    SpectralReferenceSummary:
+      additionalProperties: false
+      properties:
+        id:
+          description: slug, e.g. 'mica_carbonate_calcite'
+          title: Id
+          type: string
+        mineral:
+          title: Mineral
+          type: string
+        mineral_class:
+          $ref: '#/components/schemas/MineralClass'
+        source:
+          title: Source
+          type: string
+        source_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Source Id
+        spectrum_type:
+          $ref: '#/components/schemas/SpectrumType'
+        resampled_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Resampled To
+        point_count:
+          minimum: 2
+          title: Point Count
+          type: integer
+        wavelength_min_nm:
+          title: Wavelength Min Nm
+          type: number
+        wavelength_max_nm:
+          title: Wavelength Max Nm
+          type: number
+        diagnostic_features_nm:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          default: null
+          title: Diagnostic Features Nm
+        color:
+          pattern: ^#(?:[0-9a-fA-F]{6})$
+          title: Color
+          type: string
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+      required:
+      - id
+      - mineral
+      - mineral_class
+      - source
+      - spectrum_type
+      - point_count
+      - wavelength_min_nm
+      - wavelength_max_nm
+      - color
+      - created_at
+      - updated_at
+      title: SpectralReferenceSummary
+      type: object
+    SpectralSummary:
+      additionalProperties: false
+      properties:
+        band_count:
+          minimum: 1
+          title: Band Count
+          type: integer
+        wavelength_min_nm:
+          title: Wavelength Min Nm
+          type: number
+        wavelength_max_nm:
+          title: Wavelength Max Nm
+          type: number
+        wavelength_unit:
+          const: nm
+          default: nm
+          title: Wavelength Unit
+          type: string
+        sampling_nm:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Sampling Nm
+        ranges:
+          items:
+            $ref: '#/components/schemas/WavelengthRange'
+          title: Ranges
+          type: array
+      required:
+      - band_count
+      - wavelength_min_nm
+      - wavelength_max_nm
+      title: SpectralSummary
+      type: object
+    SpectrumType:
+      enum:
+      - reflectance
+      - continuum_removed
+      title: SpectrumType
+      type: string
+    SummaryStats:
+      additionalProperties: false
+      properties:
+        pixel_count:
+          minimum: 0
+          title: Pixel Count
+          type: integer
+        valid_pixel_count:
+          minimum: 0
+          title: Valid Pixel Count
+          type: integer
+        detected_pixel_count:
+          minimum: 0
+          title: Detected Pixel Count
+          type: integer
+        detected_fraction:
+          maximum: 1.0
+          minimum: 0.0
+          title: Detected Fraction
+          type: number
+        min:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Min
+        max:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Max
+        mean:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Mean
+        median:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Median
+        std:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Std
+        threshold_rad:
+          title: Threshold Rad
+          type: number
+        reference_id:
+          title: Reference Id
+          type: string
+        mineral:
+          title: Mineral
+          type: string
+        histogram:
+          anyOf:
+          - $ref: '#/components/schemas/Histogram'
+          - type: 'null'
+          default: null
+        caveat:
+          title: Caveat
+          type: string
+      required:
+      - pixel_count
+      - valid_pixel_count
+      - detected_pixel_count
+      - detected_fraction
+      - threshold_rad
+      - reference_id
+      - mineral
+      - caveat
+      title: SummaryStats
+      type: object
+    TileOrder:
+      enum:
+      - zyx
+      - zxy
+      title: TileOrder
+      type: string
+    TilingScheme:
+      enum:
+      - geographic
+      - mercator
+      title: TilingScheme
+      type: string
+    WavelengthRange:
+      additionalProperties: false
+      properties:
+        detector:
+          title: Detector
+          type: string
+        min_nm:
+          title: Min Nm
+          type: number
+        max_nm:
+          title: Max Nm
+          type: number
+      required:
+      - detector
+      - min_nm
+      - max_nm
+      title: WavelengthRange
+      type: object
+  responses:
+    BadRequest:
+      description: Invalid request
+      content: &id003
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content: *id003
+    ValidationError:
+      description: Validation failed
+      content: *id003

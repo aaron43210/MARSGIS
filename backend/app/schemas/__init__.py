@@ -1,0 +1,136 @@
+"""MarsGIS shared contract schemas (Pydantic v2).
+
+Backend import surface. Mirrors frontend/src/types/* and contracts/openapi.yaml.
+contract_version: 1.0.0
+"""
+
+from __future__ import annotations
+
+from .analysis import (
+    AnalysisJob,
+    AnalysisJobCreate,
+    AnalysisParams,
+    AnalysisResult,
+    Histogram,
+    JobError,
+    RasterAsset,
+    ResultRasters,
+    SamParams,
+    SummaryStats,
+)
+from .api import (
+    HealthComponent,
+    HealthComponents,
+    HealthResponse,
+    JobListResponse,
+    JobQuery,
+    LayerListResponse,
+    LayerQuery,
+    ListResponse,
+    MineralListResponse,
+    MineralQuery,
+    ObservationListResponse,
+    ObservationQuery,
+)
+from .common import (
+    ApiModel,
+    BBox,
+    ErrorResponse,
+    FieldError,
+    Footprint,
+    GeoJSONMultiPolygon,
+    GeoJSONPolygon,
+    LonLat,
+    Paginated,
+)
+from .enums import (
+    CANDIDATE_MATCH_CAVEAT,
+    IMPLEMENTED_ALGORITHMS_V1,
+    JOB_STATUS_TRANSITIONS,
+    TERMINAL_JOB_STATUSES,
+    AnalysisAlgorithm,
+    AssetRole,
+    AvailabilityStatus,
+    DatasetKind,
+    HealthStatus,
+    InstrumentType,
+    JobStatus,
+    LayerType,
+    LegendType,
+    MineralClass,
+    ProductType,
+    ProvenanceStepStatus,
+    ServiceType,
+    SpectrumType,
+    TileOrder,
+    TilingScheme,
+)
+from .layer import LayerAvailability, LayerSource, LayerStyle, Legend, LegendStop, MapLayer
+from .observation import (
+    Dataset,
+    DatasetAccess,
+    Observation,
+    ObservationSummary,
+    QualityFlags,
+    SpectralSummary,
+    TemporalExtent,
+    WavelengthRange,
+)
+from .provenance import Provenance, ProvenanceStep, SoftwareComponent
+from .spectral import SpectralReference, SpectralReferenceSummary
+
+CONTRACT_VERSION = "1.0.0"
+
+__all__ = [
+    "CONTRACT_VERSION",
+    "AnalysisJob",
+    "AnalysisJobCreate",
+    "AnalysisParams",
+    "AnalysisResult",
+    "ApiModel",
+    "BBox",
+    "Dataset",
+    "DatasetAccess",
+    "ErrorResponse",
+    "FieldError",
+    "Footprint",
+    "GeoJSONMultiPolygon",
+    "GeoJSONPolygon",
+    "HealthComponent",
+    "HealthComponents",
+    "HealthResponse",
+    "Histogram",
+    "JobError",
+    "JobListResponse",
+    "JobQuery",
+    "LayerAvailability",
+    "LayerListResponse",
+    "LayerQuery",
+    "LayerSource",
+    "LayerStyle",
+    "Legend",
+    "LegendStop",
+    "ListResponse",
+    "LonLat",
+    "MapLayer",
+    "MineralListResponse",
+    "MineralQuery",
+    "Observation",
+    "ObservationListResponse",
+    "ObservationQuery",
+    "ObservationSummary",
+    "Paginated",
+    "Provenance",
+    "ProvenanceStep",
+    "QualityFlags",
+    "RasterAsset",
+    "ResultRasters",
+    "SamParams",
+    "SoftwareComponent",
+    "SpectralReference",
+    "SpectralReferenceSummary",
+    "SpectralSummary",
+    "SummaryStats",
+    "TemporalExtent",
+    "WavelengthRange",
+]

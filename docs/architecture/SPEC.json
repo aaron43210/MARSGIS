@@ -1,0 +1,681 @@
+{
+  "final_stack": [
+    {
+      "layer": "Repo shape",
+      "choice": "Monorepo: frontend/ backend/ engine/ contracts/ docker/ docs/ .github/ + root config",
+      "why": "Four build concerns + shared contract + infra, each a disjoint owner_dir so builders work in parallel. Repo already initialized (branch master, 0 commits) with these dirs scaffolded."
+    },
+    {
+      "layer": "Frontend",
+      "choice": "React 19.3 + TypeScript 5.9.3 + Vite 7.3.7 + @vitejs/plugin-react 5.2.0 + CesiumJS 1.146 (one persistent GlobeView), Zustand 5 (immer+persist), uPlot 1.6.32, zod 4; npm (no pnpm/yarn on host)",
+      "why": "CesiumJS 3D Mars globe is the PRIMARY product. Mature Vite 7 line chosen over bleeding-edge Vite 8/plugin-react 6 (Rolldown/oxc) and TS 7 because typescript-eslint 8.71 requires TS <6.1 and the capstone must reliably RUN."
+    },
+    {
+      "layer": "Cesium Mars config",
+      "choice": "Ellipsoid.default = Mars radii (3396190/3396190/3376200) set in main.tsx BEFORE any Viewer; GeographicTilingScheme (2 cols x 1 row at z0); Earth chrome disabled; EllipsoidTerrainProvider; pick via camera.pickEllipsoid (never pickPosition); requestRenderMode on",
+      "why": "Matches the verified NASA Trek EQ equirectangular 2x1 grid so basemaps and result overlays co-register with no reprojection. pickEllipsoid is the only reliable lon/lat pick with flat terrain."
+    },
+    {
+      "layer": "Backend",
+      "choice": "Python 3.12 + FastAPI 0.143 (app factory + lifespan) + SQLModel/SQLAlchemy 2.x async + pydantic 2.14; imports app.schemas (does not redefine shapes)",
+      "why": "GDAL/rasterio/rio-tiler/spectral/scikit-learn ecosystem is Python and installed on host. Pydantic already governs the wire; app.schemas is the single source of truth generating contracts/openapi.yaml."
+    },
+    {
+      "layer": "Database",
+      "choice": "DEFAULT SQLite (aiosqlite, footprint as GeoJSON text + denormalized minx/miny/maxx/maxy bbox columns, zero setup); PRODUCTION PostgreSQL+PostGIS (asyncpg, Geometry(POLYGON,104905)+GiST) selected by DATABASE_URL. Hybrid migrations: metadata.create_all for SQLite, Alembic for Postgres",
+      "why": "Runs out-of-the-box with no infra for dev (hard constraint); production path available via one env var. bbox columns give dialect-agnostic viewport filtering with no SpatiaLite dependency."
+    },
+    {
+      "layer": "Job queue",
+      "choice": "DEFAULT in-process asyncio worker (asyncio.Queue + lifespan task + anyio.to_thread for the CPU-bound engine call, JOB_CONCURRENCY cap, per-job wait_for timeout); PRODUCTION arq+Redis via JOB_BACKEND=arq + compose --profile worker. Both write identical status/progress to analysis_job; client polls GET /api/analysis-jobs/{id}. No SSE/websockets in v1",
+      "why": "No extra infra for the default demo path; horizontal scale available via config. Polling keeps the contract trivial for frontend and CI."
+    },
+    {
+      "layer": "Result raster display",
+      "choice": "On-the-fly tiling from the engine COG via rio-tiler over a CUSTOM morecantile Mars GEOGRAPHIC TileMatrixSet (z0=2x1), served at GET /api/results/{id}/tiles/{z}/{x}/{y}.png (tile_order zxy); color baked server-side with colormap+value_range, transparent nodata. SingleTile /preview.png is the small-bbox fallback. AnalysisResult.map_layer (type=result_tiles) is the canonical ready-to-add Cesium layer object",
+      "why": "Geographic (NOT WebMercator) tiling is mandatory so overlays register pixel-for-pixel with Trek equirectangular basemaps. Embedding a MapLayer lets the frontend layer manager treat catalog and result layers uniformly (single append)."
+    },
+    {
+      "layer": "Science engine",
+      "choice": "Standalone marsgis_engine package (src/ layout, py.typed) exposing a Python API (run_sam) AND a marsgis-engine CLI; invoked by backend through one EngineAdapter seam: ENGINE_MODE=inprocess (import, dev default) or subprocess|container (ghcr.io/<account>/marsgis-engine, rlimits) for isolation. Vectorized numpy SAM, row-block chunked, emits angle COG (float32 radians) + candidate mask COG (uint8) + provenance.json + report.txt in the input Mars CRS. No recalibration, no reprojection",
+      "why": "MTRDR is analysis-ready I/F; outputs inherit the input grid losslessly. In-process is fastest for dev/CI; container gives a hard boundary for untrusted public workloads."
+    },
+    {
+      "layer": "Shared contract",
+      "choice": "contract_version 1.0.0. app.schemas (Pydantic v2, extra=forbid) authoritative -> contracts/openapi.yaml GENERATED via gen_openapi.py -> frontend/src/types hand-written TS mirror (tsc --strict clean, NOT openapi-typescript codegen). contracts/enums.json pins every closed vocabulary + SAM/tile defaults for all three languages",
+      "why": "One source of truth that cannot silently drift; CI asserts live /openapi.json equals the committed spec. Resolves the frontend 'generate schema.d.ts' vs data-model 'hand-written mirror' overlap in favor of the already-built, compile-checked mirror."
+    },
+    {
+      "layer": "Coordinates",
+      "choice": "Mars IAU 2000 degrees everywhere: lon east-positive [-180,180], planetocentric lat [-90,90], CRS 104905. Centralized normalizeLon helper; GeoJSON carries plain degrees (datum documented in enums.json.crs)",
+      "why": "Trek advertises urn:ogc:def:crs:EPSG::104905; aligning footprints, basemaps, result tiles, gazetteer and pixel queries on one documented convention prevents misplacement."
+    },
+    {
+      "layer": "Containerization",
+      "choice": "Docker + docker compose (v2 plugin). All images multi-stage, non-root (uid 10001). engine/backend base python:3.12-slim-bookworm with rasterio from PyPI wheels (vendored GDAL>=3.8, no system libgdal); frontend node:24 build -> nginx-unprivileged serve. compose: db+backend+frontend default; engine/worker/redis/titiler behind profiles; all ports 127.0.0.1-bound. GHCR publish on git tag",
+      "why": "Pinned 3.12 (not host 3.14) for broadest scientific-wheel coverage; wheels decouple Python from any GDAL base-image coupling. Localhost binds because the dev stack is unauthenticated."
+    },
+    {
+      "layer": "Python/Node pins",
+      "choice": "Python 3.12 in all containers + CI (host 3.14 best-effort local only); Node 24 LTS in Docker/CI (host 26 local only). Deps hash-locked (pip --require-hashes); version from git tags via setuptools-scm/hatch-vcs",
+      "why": "Reproducibility needs one pinned interpreter for the whole tree, not whatever the host runs."
+    }
+  ],
+  "directory_tree": "MARS/\n\u251c\u2500\u2500 .gitignore                         # EXISTS; ignores *.img/*.tif/data/, allows engine/sample_data/** + **/tests/fixtures/**\n\u251c\u2500\u2500 .editorconfig                      # [infra] whitespace: 2sp ts/json/yml, 4sp py, tab Makefile\n\u251c\u2500\u2500 .env.example                       # [infra] every env var, SAFE placeholders, SQLite+PostGIS DATABASE_URL examples\n\u251c\u2500\u2500 .pre-commit-config.yaml            # [infra] gitleaks, detect-private-key, check-added-large-files --maxkb=256, ruff, prettier, hadolint\n\u251c\u2500\u2500 .hadolint.yaml                     # [infra] Dockerfile lint config\n\u251c\u2500\u2500 .zenodo.json                       # [infra] release archive metadata\n\u251c\u2500\u2500 CITATION.cff                       # [infra] citation metadata\n\u251c\u2500\u2500 CHANGELOG.md                       # [infra] Keep-a-Changelog\n\u251c\u2500\u2500 LICENSE                            # [infra] MIT\n\u251c\u2500\u2500 README.md                          # [infra] quickstart (cp .env.example .env && make up), security note, disclaimer\n\u251c\u2500\u2500 Makefile                           # [infra] up/down/dev/test/lint/build/engine-image/db-upgrade/seed targets (docker compose)\n\u251c\u2500\u2500 docker-compose.yml                 # [infra] db(postgis) + backend + frontend; engine/worker/redis/titiler behind profiles; 127.0.0.1 binds\n\u251c\u2500\u2500 docker-compose.override.yml        # [infra] dev overlay: bind-mounts, uvicorn --reload, vite dev server\n\u251c\u2500\u2500 contracts/                         # [shared-contract] EXISTS \u2014 frozen single source of truth\n\u2502   \u251c\u2500\u2500 enums.json                     # EXISTS; closed vocabularies + SAM/tile defaults + crs + caveats\n\u2502   \u251c\u2500\u2500 openapi.yaml                   # EXISTS; GENERATED OpenAPI 3.1 (12 paths, 51 schemas), validated\n\u2502   \u2514\u2500\u2500 gen_openapi.py                 # EXISTS; regenerates openapi.yaml from app.schemas\n\u251c\u2500\u2500 docker/                            # [infra] runtime-mounted assets only\n\u2502   \u251c\u2500\u2500 README.md                      # build-context convention\n\u2502   \u2514\u2500\u2500 postgres/initdb/01-postgis.sql # CREATE EXTENSION postgis/postgis_raster; IAU 104905 handled in alembic 0001\n\u251c\u2500\u2500 docs/                              # [docs]\n\u2502   \u251c\u2500\u2500 DEVELOPMENT.md                 # Python 3.12 / Node 24 pin rationale, SQLite<->PostGIS switch, engine CLI usage\n\u2502   \u251c\u2500\u2500 RELEASING.md                   # SemVer, tag-driven release, GHCR, Zenodo\n\u2502   \u251c\u2500\u2500 DATA_LICENSES.md               # NASA attributions, no-redistribution, candidate-not-confirmed disclaimer\n\u2502   \u2514\u2500\u2500 ARCHITECTURE.md                # this reconciled contract, result->map flow, job lifecycle\n\u251c\u2500\u2500 .github/                           # [ci]\n\u2502   \u251c\u2500\u2500 workflows/ci.yml               # frontend + python(backend+engine) + docker-build jobs, offline\n\u2502   \u251c\u2500\u2500 workflows/release.yml          # tag v* -> multi-arch GHCR push + SBOM/provenance\n\u2502   \u251c\u2500\u2500 dependabot.yml                 # npm/pip/docker/actions\n\u2502   \u251c\u2500\u2500 CODEOWNERS                     # route reviews by concern\n\u2502   \u2514\u2500\u2500 pull_request_template.md       # no-bulk-data, VERIFIED-vs-ASSUMED checklist\n\u251c\u2500\u2500 frontend/                          # [frontend] owner_dir (except src/types = shared-contract; Dockerfile/.dockerignore/nginx = infra)\n\u2502   \u251c\u2500\u2500 package.json                   # React 19.3, cesium 1.146, zustand 5, immer, uplot, zod 4; vite 7.3.7, ts 5.9.3, vitest 3.2.7\n\u2502   \u251c\u2500\u2500 index.html / vite.config.ts / tsconfig.json / tsconfig.node.json\n\u2502   \u251c\u2500\u2500 eslint.config.js / .prettierrc / .gitignore / .env.example / .env.development / .env.production\n\u2502   \u251c\u2500\u2500 README.md\n\u2502   \u251c\u2500\u2500 Dockerfile                     # [infra] node24 build -> nginx-unprivileged:8080\n\u2502   \u251c\u2500\u2500 .dockerignore                  # [infra]\n\u2502   \u251c\u2500\u2500 nginx/default.conf.template    # [infra] SPA fallback, Cesium-friendly CSP, /healthz\n\u2502   \u251c\u2500\u2500 public/favicon.svg\n\u2502   \u2514\u2500\u2500 src/\n\u2502       \u251c\u2500\u2500 main.tsx                   # installs Mars ellipsoid + CESIUM_BASE_URL BEFORE React mounts\n\u2502       \u251c\u2500\u2500 App.tsx / vite-env.d.ts / env.ts\n\u2502       \u251c\u2500\u2500 types/                     # [shared-contract] EXISTS \u2014 enums/common/observation/spectral/analysis/layer/provenance/api/index.ts\n\u2502       \u251c\u2500\u2500 config/                    # constants.ts (Mars radii, Nili Fossae), cesium.ts, basemaps.ts\n\u2502       \u251c\u2500\u2500 cesium/                    # MarsViewer, imageryProviders, LayerManager, FootprintLayer, ResultOverlay, picking, geo, markers\n\u2502       \u251c\u2500\u2500 components/                # layout/ panels/ layers/ catalog/ analysis/ results/ inspector/ search/ common/\n\u2502       \u251c\u2500\u2500 store/                     # index.ts + {view,layer,catalog,analysis,result,inspector,gazetteer}Slice.ts + selectors.ts\n\u2502       \u251c\u2500\u2500 api/                       # client.ts, catalog/analysis/results/gazetteer/layers.ts, validators.ts (zod), mocks.ts\n\u2502       \u251c\u2500\u2500 hooks/                     # useLayerSync, useCatalog, useAnalysisJob, usePixelInspector, useGazetteer, useUrlSync\n\u2502       \u251c\u2500\u2500 utils/                     # format.ts (normalizeLon), color.ts, debounce.ts\n\u2502       \u251c\u2500\u2500 styles/                    # index.css, panels.css\n\u2502       \u251c\u2500\u2500 data/                      # tiny bundled samples for VITE_USE_MOCKS offline mode\n\u2502       \u2514\u2500\u2500 test/                      # setup.ts + LayerManager/geo/format/layerSlice.test.ts\n\u251c\u2500\u2500 backend/                           # [backend] owner_dir (except app/schemas + app/seed = shared-contract; Dockerfile/.dockerignore/entrypoint = infra)\n\u2502   \u251c\u2500\u2500 pyproject.toml                 # requires-python>=3.12; fastapi/sqlmodel/rio-tiler/morecantile/rasterio/geoalchemy2; extras [prod]=arq,redis [dev]=pytest,ruff,mypy\n\u2502   \u251c\u2500\u2500 requirements.txt               # hash-locked for pip --require-hashes\n\u2502   \u251c\u2500\u2500 alembic.ini / README.md / .env.example\n\u2502   \u251c\u2500\u2500 Dockerfile / .dockerignore / entrypoint.sh   # [infra]\n\u2502   \u2514\u2500\u2500 app/\n\u2502       \u251c\u2500\u2500 __init__.py (__version__) / main.py / config.py / logging.py / deps.py / errors.py\n\u2502       \u251c\u2500\u2500 schemas/                   # [shared-contract] EXISTS \u2014 enums/common/observation/spectral/analysis/layer/provenance/api/__init__.py\n\u2502       \u251c\u2500\u2500 seed/                      # [shared-contract] EXISTS \u2014 data_sources.json, mars_trek_layers.json, crism_nili_catalogue.json, mica_minerals.json\n\u2502       \u251c\u2500\u2500 core/                      # constants.py, tms.py (MARS_EQC_TMS 2x1), colormaps.py\n\u2502       \u251c\u2500\u2500 db/                        # base.py, session.py, models.py, geo.py, migrate.py, seed.py\n\u2502       \u251c\u2500\u2500 alembic/                   # env.py + versions/0001_initial.py (postgis ext + 104905 + GiST)\n\u2502       \u251c\u2500\u2500 api/                       # router.py + routes/{health,observations,minerals,layers,jobs,results,tiles}.py\n\u2502       \u251c\u2500\u2500 services/                  # jobs/{runner,inprocess,arq_runner,tasks,progress}.py, engine_adapter.py, raster.py, storage.py, quota.py, catalog.py\n\u2502       \u251c\u2500\u2500 worker.py                  # arq entrypoint (prod)\n\u2502       \u2514\u2500\u2500 tests/                     # conftest.py, fixtures/make_sample_cog.py, test_{jobs_inprocess,results_tiles,security_limits,seed_and_catalogue}.py\n\u2514\u2500\u2500 engine/                            # [engine] owner_dir (except sample_data = shared-contract; Dockerfile/.dockerignore = infra)\n    \u251c\u2500\u2500 pyproject.toml                 # requires-python>=3.12; numpy, rasterio, spectral, scipy; marsgis-engine console_script\n    \u251c\u2500\u2500 requirements.txt               # hash-locked\n    \u251c\u2500\u2500 README.md / Makefile / CHANGELOG.md / .gitignore\n    \u251c\u2500\u2500 Dockerfile / .dockerignore     # [infra] python:3.12-slim, ENTRYPOINT marsgis-engine\n    \u251c\u2500\u2500 schemas/provenance.schema.json # engine-owned provenance JSON Schema (shared for validation)\n    \u251c\u2500\u2500 sample_data/                   # [shared-contract] EXISTS \u2014 make_sample_cube.py, sample_crism_nili.img/.hdr, carbonate_reference.csv, sample_truth.json\n    \u251c\u2500\u2500 src/marsgis_engine/\n    \u2502   \u251c\u2500\u2500 __init__.py / _version.py / errors.py / config.py / logging_utils.py / py.typed\n    \u2502   \u251c\u2500\u2500 io/                        # envi_reader.py, reference.py, raster_writer.py, provenance.py, report.py, fetch.py\n    \u2502   \u251c\u2500\u2500 science/                   # wavelengths.py, resample.py, continuum.py, sam.py, pipeline.py\n    \u2502   \u251c\u2500\u2500 cli.py\n    \u2502   \u2514\u2500\u2500 data/                      # minerals.json + mica/*.tab (+ NOTICE.txt) tiny public-domain MICA refs\n    \u2514\u2500\u2500 tests/                         # conftest.py, synthetic.py, test_{sam,resample,continuum,wavelengths,envi_reader,reference,raster_writer,provenance,pipeline,cli}.py",
+  "api_contract": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "response": "HealthResponse{status, version, contract_version:'1.0.0', git_sha, time, components{db,engine,tiler,queue:{status,detail,latency_ms}}, implemented_algorithms:['SAM']}",
+      "notes": "Liveness + capability probe. Reports job_backend (inprocess|arq) and engine_mode."
+    },
+    {
+      "method": "GET",
+      "path": "/api/layers",
+      "request": "?type&is_base&availability",
+      "response": "ListResponse<MapLayer>{items}",
+      "notes": "Cesium imagery config: Trek basemaps (tile_order=zyx, file_extension per product jpg|png) + any overlays. Only VERIFIED products ship default_visible; others availability=unconfirmed."
+    },
+    {
+      "method": "GET",
+      "path": "/api/observations",
+      "request": "?instrument&product_type&region&bbox=w,s,e,n&suitable&q&limit(50,max200)&offset&sort",
+      "response": "Paginated<ObservationSummary>{items,total,limit,offset,next_offset}",
+      "notes": "Summary keeps footprint+bbox for the map; drops spectral/quality/source_url. bbox filter = numeric range on SQLite, ST_Intersects on PostGIS. Returns footprints the globe draws as clickable polygons."
+    },
+    {
+      "method": "GET",
+      "path": "/api/observations/{id}",
+      "response": "Observation (404 ErrorResponse if absent)",
+      "notes": "id is provider-native, stored verbatim (e.g. 'frt00003e12'). Full record incl. footprint GeoJSON, spectral summary, quality."
+    },
+    {
+      "method": "GET",
+      "path": "/api/minerals",
+      "request": "?class&source&q",
+      "response": "ListResponse<SpectralReferenceSummary>{items}",
+      "notes": "Light picker list, NO wavelength/reflectance arrays. MICA references, carbonate first."
+    },
+    {
+      "method": "GET",
+      "path": "/api/minerals/{id}",
+      "response": "SpectralReference (adds wavelength[]/reflectance[], equal-length validated)",
+      "notes": "Arrays feed the uPlot spectral plot; split from the list to keep the picker light."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analysis-jobs",
+      "request": "AnalysisJobCreate{observation_id, algorithm:'SAM', reference_id, params?:Partial<SamParams>} + optional Idempotency-Key header",
+      "response": "202 AnalysisJob{status:'queued'} + Location header",
+      "notes": "Validates observation exists & analysis_suitable, reference exists, algorithm implemented (SID/BAND_RATIO -> 422). Enum-only method = no arbitrary exec. Quota-guarded (per-client concurrency + hourly). SamParams defaults: threshold_rad 0.10, continuum_removed true, wavelength_subset_nm [1000,2600]."
+    },
+    {
+      "method": "GET",
+      "path": "/api/analysis-jobs",
+      "request": "?status&observation_id&limit&offset",
+      "response": "Paginated<AnalysisJob>",
+      "notes": "Dashboard job list."
+    },
+    {
+      "method": "GET",
+      "path": "/api/analysis-jobs/{id}",
+      "response": "AnalysisJob{status,progress 0..1,message,result_id?,error?}",
+      "notes": "Poll target. Lifecycle queued->running->succeeded|failed; terminal states have no outgoing transitions. v1 has no websockets/SSE."
+    },
+    {
+      "method": "GET",
+      "path": "/api/results/{id}",
+      "response": "AnalysisResult{rasters,bounds[w,s,e,n],value_range,legend,summary_stats,map_layer,provenance_id,caveat}",
+      "notes": "map_layer is a ready MapLayer(type=result_tiles). caveat REQUIRED (CANDIDATE_MATCH_CAVEAT) on result, summary_stats, legend."
+    },
+    {
+      "method": "GET",
+      "path": "/api/results/{id}/tiles/{z}/{x}/{y}.png",
+      "request": "?colormap&rescale",
+      "response": "image/png tile (204 for empty/nodata tile)",
+      "notes": "On-the-fly rio-tiler over custom Mars GEOGRAPHIC TMS (z0=2x1), tile_order zxy, 256px. Color baked server-side; transparent nodata. Immutable Cache-Control. z/x/y bounded."
+    },
+    {
+      "method": "GET",
+      "path": "/api/results/{id}/preview.png",
+      "response": "image/png downsampled full-extent overlay",
+      "notes": "SingleTileImageryProvider fallback for tiny bboxes; max_size bounded to prevent huge in-memory decode."
+    },
+    {
+      "method": "GET",
+      "path": "/api/results/{id}/download",
+      "request": "?asset=primary_metric|sam_angle|detection_mask|match_score",
+      "response": "image/tiff Cloud-Optimized GeoTIFF (Content-Disposition attachment)",
+      "notes": "Path-traversal-safe resolution under STORAGE_ROOT/results."
+    },
+    {
+      "method": "GET",
+      "path": "/api/provenance/{id}",
+      "response": "Provenance{engine_image,engine_version,software[],source_ids[],source_urls[],steps[],checksums,timestamps,caveat}",
+      "notes": "id from AnalysisResult.provenance_id. Reproducibility record incl. engine image digest."
+    },
+    {
+      "method": "GET",
+      "path": "/openapi.json",
+      "response": "OpenAPI 3.1 document",
+      "notes": "MUST equal contracts/openapi.yaml (CI equality check). Source of the frontend TS mirror pin."
+    }
+  ],
+  "data_model": [
+    {
+      "entity": "Observation",
+      "fields": "id (native obs id, opaque string), instrument:InstrumentType, product_type:ProductType, title, provider, region, bbox[w,s,e,n], center{lon,lat}, footprint(GeoJSON Polygon/MultiPolygon, degrees), acquired_at, resolution_m, analysis_suitable:bool, thumbnail_url, target='Mars', dataset_id?->Dataset, spectral:SpectralSummary{band_count,wavelength_min/max_nm,sampling_nm,ranges[]}, quality:QualityFlags{spike/atmospheric/photometric_corrected,score 0..1,notes}, source_url, browse_url, created/updated_at",
+      "notes": "ObservationSummary = list projection (keeps footprint+bbox, drops spectral/quality/source_url). Persisted with denormalized minx/miny/maxx/maxy; PostGIS geometry(POLYGON,104905)+GiST, SQLite GeoJSON text."
+    },
+    {
+      "entity": "Dataset",
+      "fields": "id, title, provider, kind:DatasetKind, instrument?, product_type?, spatial_extent?, temporal_extent?, license, attribution, access:DatasetAccess{service:ServiceType,url,auth_required}, observation_count",
+      "notes": "Groups/sources observations; maps from backend/app/seed/data_sources.json."
+    },
+    {
+      "entity": "SpectralReference",
+      "fields": "id(slug), mineral, mineral_class:MineralClass, source('CRISM MICA'), spectrum_type:SpectrumType(reflectance|continuum_removed), resampled_to('CRISM_MTRDR'), point_count, wavelength_min/max_nm, diagnostic_features_nm[], color(hex); full record adds wavelength[]+reflectance[] (len==point_count validated)",
+      "notes": "Summary (no arrays) for picker; full via /api/minerals/{id} for plot. carbonate -> mg/fe_ca_carbonate, olivine -> fe/mg_olivine, clay -> fe/al/mg_smectite."
+    },
+    {
+      "entity": "AnalysisJob",
+      "fields": "id, observation_id->Observation, algorithm:AnalysisAlgorithm, reference_id->SpectralReference, params:SamParams{threshold_rad=0.10,continuum_removed=true,wavelength_subset_nm=[1000,2600],bands?,output_resolution_m?}, status:JobStatus(queued|running|succeeded|failed), progress 0..1, message, result_id?->AnalysisResult, error?:JobError{code,message,retriable}, client_fingerprint, created/updated/started/finished_at",
+      "notes": "AnalysisJobCreate={observation_id,algorithm,reference_id,params?}. Transitions pinned in enums.json; terminal states frozen. Cancellation out of scope for v1."
+    },
+    {
+      "entity": "AnalysisResult",
+      "fields": "id, job_id->, observation_id, algorithm, reference_id, mineral snapshot, rasters:ResultRasters{cog,angle,mask,score? each RasterAsset{href,role:AssetRole,media_type(COG),units,value_range,nodata,w,h,size}}, bounds[w,s,e,n], value_range[min,max], legend:Legend, summary_stats:SummaryStats{pixel_count,valid,detected,detected_fraction,min/max/mean/median/std,threshold_rad,reference_id,mineral,histogram?,caveat}, map_layer:MapLayer(type=result_tiles), provenance_id->Provenance, caveat",
+      "notes": "caveat REQUIRED on result, summary_stats, legend \u2014 a caveat-less detection is structurally unrepresentable. map_layer is the ready Cesium layer."
+    },
+    {
+      "entity": "MapLayer",
+      "fields": "id, type:LayerType, title, subtitle, is_base, default_visible, source:LayerSource{url_template,tiling_scheme(geographic),tile_order(zyx|zxy),tile_size(256),file_extension(jpg|png),level_zero_tiles_x(2)/y(1),min/max_zoom,tile_matrix_set?,provider}, style:LayerStyle{opacity,colormap?,value_range?,z_index}, attribution, availability:LayerAvailability{status:AvailabilityStatus,checked_at,sample_tile_url,http_status}, bounds?, legend?",
+      "notes": "Unifies Trek basemaps (zyx, per-product ext) and result overlays (zxy, /api/results/{id}/tiles). Frontend builds Cesium UrlTemplateImageryProvider on GeographicTilingScheme({x:2,y:1}) + Rectangle.fromDegrees(bounds)."
+    },
+    {
+      "entity": "Provenance",
+      "fields": "id, result_id->, job_id, observation_id, reference_id, engine_image=ghcr.io/<account>/marsgis-engine:<tag>, engine_version, software:SoftwareComponent[], source_ids[], source_urls[], steps:ProvenanceStep[]{order,name,software,version,params,started/finished_at,status,message}, params, inputs/outputs_checksums, started/finished_at, timestamp, caveat",
+      "notes": "Conforms to engine/schemas/provenance.schema.json. --timestamp placeholder supported for byte-reproducible test outputs."
+    }
+  ],
+  "data_sources": [
+    {
+      "name": "PDS ODE REST API (CRISM MTRDR discovery)",
+      "url": "https://oderest.rsl.wustl.edu/live2/?query=product&target=mars&ihid=MRO&iid=CRISM&pt=MTRDR&results=m&output=JSON",
+      "verified": true,
+      "fetch_strategy": "live_proxy_with_cache; backend passthrough with bbox filter (Nili Fossae [74,20,78,24] -> 23 products, WKT footprints + per-file URLs). No auth, no bulk download. Seeded offline into crism_nili_catalogue.json."
+    },
+    {
+      "name": "PDS Geosciences MTRDR archive (ENVI cubes)",
+      "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/",
+      "verified": true,
+      "fetch_strategy": "live_proxy_stream_on_demand; backend streams only the one selected observation's _if cube (100-300MB) and caches it; never bulk-mirror. ENVI BSQ float32, ignore=65535, nm wavelengths; GDAL/rasterio read directly (gdalinfo verified)."
+    },
+    {
+      "name": "CRISM MICA reference library (.tab)",
+      "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-4-typespec-v1/mrocr_8001/data/",
+      "verified": true,
+      "fetch_strategy": "bundled subset (carbonate/olivine/clay .tab, few KB, public domain) ships in engine/src/marsgis_engine/data/mica/; remainder opt-in via marsgis-engine fetch-references. .lbl: col1 wavelength um, col2 ratioed I/F corrected (SAM reference)."
+    },
+    {
+      "name": "USGS SIM 3292 geologic map (OGC API-Features)",
+      "url": "https://astrogeology.usgs.gov/pygeoapi/collections/mars/sim3292_global_geologic_map/units/items?bbox=74,20,78,24&f=json",
+      "verified": true,
+      "fetch_strategy": "live GeoJSON vectors with bbox filter (units/contacts/structure), rendered as a styled Cesium GeoJsonDataSource overlay; bundled Nili-clipped GeoJSON fallback offline. NOTE: units collection path uses prefix sim3292_global_geologic_map, contacts/structure use global_geologic_map."
+    },
+    {
+      "name": "NASA Mars Trek basemaps (WMTS)",
+      "url": "https://trek.nasa.gov/tiles/Mars/EQ/{product}/1.0.0//default/default028mm/{z}/{y}/{x}.{ext}",
+      "verified": true,
+      "fetch_strategy": "direct browser fetch (CORS open) with optional backend /trek proxy. RE-VERIFIED THIS SESSION HTTP 200: Viking_MDIM21_ClrMosaic_232m (jpg), MGS_MOLA_ClrShade_merge_463m (jpg), mola128_mola64_merge_90Nto90S_SimpleC_clon0 (png), THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018 (png). Grid 2x1 z0, order {z}/{row=y}/{col=x} (zyx), extension per-product. Earlier guessed MOLA-DEM/THEMIS ids 404'd."
+    },
+    {
+      "name": "Bundled synthetic sample (offline/CI)",
+      "url": "engine/sample_data/ (sample_crism_nili.img/.hdr, carbonate_reference.csv, sample_truth.json)",
+      "verified": true,
+      "fetch_strategy": "committed tiny fixtures (~540KB cube); GDAL-readable (verified), deterministic SAM separates carbonate 0.23deg vs olivine 7.65deg. Enables full pipeline + tiles + CI with zero network. Labelled SYNTHETIC throughout; never presented as a real detection."
+    }
+  ],
+  "data_model_note": "",
+  "conflicts_resolved": [
+    {
+      "conflict": "Result raster display: frontend proposed client-side XYZ-vs-SingleTile selected by metadata; backend/data-model proposed on-the-fly rio-tiler tile endpoint over a custom Mars geographic TMS.",
+      "resolution": "CANONICAL = backend on-the-fly rio-tiler endpoint GET /api/results/{id}/tiles/{z}/{x}/{y}.png over a custom morecantile Mars GEOGRAPHIC TMS (z0=2x1), color baked server-side. AnalysisResult.map_layer (MapLayer type=result_tiles, tile_order=zxy) is the ready display object the frontend consumes directly. SingleTile /preview.png is the small-bbox fallback, chosen by map_layer.source. Frontend does NO raster math."
+    },
+    {
+      "conflict": "Job queue: in-process asyncio worker vs arq+Redis vs 'async + poll'.",
+      "resolution": "DEFAULT in-process asyncio worker (no infra, out-of-the-box). PRODUCTION arq+Redis via JOB_BACKEND=arq + compose --profile worker. Both write identical status/progress to analysis_job; API backend-agnostic. Client polls GET /api/analysis-jobs/{id}. v1 drops SSE/websockets entirely (keep the 4-state enum and polling only)."
+    },
+    {
+      "conflict": "DB abstraction: SQLModel single async engine + bbox columns vs PostGIS-geometry-required vs SQLite fallback.",
+      "resolution": "SQLModel/SQLAlchemy 2.x async, single engine. DEFAULT SQLite (aiosqlite, footprint GeoJSON text + denormalized bbox columns). PRODUCTION PostgreSQL+PostGIS (asyncpg, geometry 104905 + GiST + ST_Intersects) via DATABASE_URL. Hybrid migrations: metadata.create_all for SQLite dev, Alembic (upgrade head) for Postgres. bbox columns give dialect-agnostic viewport filtering; no SpatiaLite."
+    },
+    {
+      "conflict": "Python version: engine >=3.11, backend >=3.12, devops pins 3.12, host is 3.14.",
+      "resolution": "Pin Python 3.12 in ALL containers and CI (broadest scientific-wheel coverage). requires-python>=3.12 for backend and engine. Host 3.14 is best-effort local tooling only; docs direct non-Docker devs to a 3.12 venv (uv/pyenv). Docker/compose/CI are authoritative."
+    },
+    {
+      "conflict": "Node version: devops pins 24 LTS, frontend uses host; host is 26.",
+      "resolution": "Docker/CI build on node:24 LTS (authoritative, .nvmrc=24). Local dev on host node 26 is fine. Frontend toolchain stays pinned at Vite 7.3.7 / plugin-react 5.2.0 / TS 5.9.3 (not Vite 8 / plugin-react 6 / TS 7)."
+    },
+    {
+      "conflict": "TS types source: frontend proposed openapi-typescript codegen to schema.d.ts; data-model proposed a hand-written TS mirror in frontend/src/types.",
+      "resolution": "CANONICAL = hand-written TS mirror in frontend/src/types (ALREADY BUILT, tsc --strict clean), owned by the shared-contract unit. Drop the openapi-typescript gen:api step and schema.d.ts. app.schemas (Pydantic) is authoritative -> contracts/openapi.yaml generated -> TS mirror kept in lockstep by contract_version + CI equality check (live /openapi.json == contracts/openapi.yaml). Frontend keeps zod validators for render-critical payloads only."
+    },
+    {
+      "conflict": "Engine invocation: hard-wired import vs subprocess/container.",
+      "resolution": "Single EngineAdapter seam. DEFAULT ENGINE_MODE=inprocess (import marsgis_engine, backend installs it editable) for dev/CI. PRODUCTION/isolation ENGINE_MODE=subprocess|container (ghcr.io/<account>/marsgis-engine) with RLIMIT_CPU/RLIMIT_AS + wall-clock timeout for untrusted public workloads. Engine owns the Python API, the marsgis-engine CLI, and the image."
+    },
+    {
+      "conflict": "OpenAPI format/location: frontend referenced contracts/openapi.json; data-model produced contracts/openapi.yaml.",
+      "resolution": "CANONICAL = contracts/openapi.yaml (already generated and validated). Backend's runtime /openapi.json must equal it (CI check). No separate hand-authored openapi.json."
+    },
+    {
+      "conflict": "Shared files living inside sibling service dirs (Dockerfile, .dockerignore, backend/entrypoint.sh, frontend/nginx/) vs service ownership.",
+      "resolution": "The infra-root unit OWNS these specific files although they physically sit under frontend/backend/engine; service units MUST NOT create them. Service units own their own pyproject.toml + hash-locked requirements.txt + package.json (deps are the service's knowledge). File-level ownership stays disjoint even though directories nest."
+    },
+    {
+      "conflict": "Trek product ids / tile extension (jpg vs png) and tile order.",
+      "resolution": "Store per-product file_extension + tile_order in MapLayer.source; probe LayerAvailability at startup. VERIFIED (re-confirmed 200 this session): Viking (jpg), MOLA ClrShade (jpg) both zyx; MOLA-DEM mola128_mola64_merge_90Nto90S_SimpleC_clon0 (png), THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018 (png). Result overlays use zxy. Only verified layers ship default_visible."
+    },
+    {
+      "conflict": "Scientific over-claim across all concerns.",
+      "resolution": "CANDIDATE_MATCH_CAVEAT is a single constant in contracts/enums.json, enforced as a REQUIRED field on AnalysisResult, SummaryStats, Legend and Provenance, and surfaced in StatusBar/InspectorPanel/ResultsPanel/SpectralAngleBadge. The continuous angle raster is always retained alongside the mask. A result without the caveat is structurally unrepresentable."
+    }
+  ],
+  "build_manifest": [
+    {
+      "component": "shared-contract (FROZEN \u2014 already built this session; freeze, do not rewrite)",
+      "owner_dir": "contracts/",
+      "depends_on": [],
+      "files": [
+        {
+          "path": "contracts/enums.json",
+          "purpose": "Canonical closed vocabularies + SAM/tile defaults + crs + caveat for all 3 languages",
+          "key_contents": "EXISTS. 16 enums, implemented_algorithms_v1=[SAM], job_status_transitions, defaults.sam/tiles, crs(104905, radii), caveats.candidate_match"
+        },
+        {
+          "path": "contracts/openapi.yaml",
+          "purpose": "Generated OpenAPI 3.1 contract",
+          "key_contents": "EXISTS. 12 paths, 51 schemas, validated"
+        },
+        {
+          "path": "contracts/gen_openapi.py",
+          "purpose": "Regenerate openapi.yaml from app.schemas",
+          "key_contents": "EXISTS"
+        },
+        {
+          "path": "backend/app/schemas/*.py",
+          "purpose": "Authoritative Pydantic v2 models (enums/common/observation/spectral/analysis/layer/provenance/api/__init__)",
+          "key_contents": "EXISTS. extra=forbid, CONTRACT_VERSION='1.0.0', CANDIDATE_MATCH_CAVEAT"
+        },
+        {
+          "path": "frontend/src/types/*.ts",
+          "purpose": "Hand-written TS mirror (tsc --strict clean)",
+          "key_contents": "EXISTS. enums/common/observation/spectral/analysis/layer/provenance/api/index.ts + API_ROUTES + CONTRACT_VERSION"
+        },
+        {
+          "path": "backend/app/seed/*.json",
+          "purpose": "Seed catalogue/layers/sources/minerals",
+          "key_contents": "EXISTS. crism_nili_catalogue.json (6 obs, frt00003e12 primary), mars_trek_layers.json (verified ids+ext), data_sources.json; mica_minerals.json shape fixed"
+        },
+        {
+          "path": "engine/sample_data/*",
+          "purpose": "Tiny synthetic cube + reference + truth for offline pipeline/CI",
+          "key_contents": "EXISTS & GDAL-verified. sample_crism_nili.img/.hdr (48x48x60 ENVI), carbonate_reference.csv, sample_truth.json, make_sample_cube.py"
+        },
+        {
+          "path": "engine/schemas/provenance.schema.json",
+          "purpose": "Provenance JSON Schema (engine-authored, shared for validation)",
+          "key_contents": "draft 2020-12; schema_version, software, algorithm, inputs, parameters, results, environment, disclaimer"
+        }
+      ]
+    },
+    {
+      "component": "engine (marsgis_engine package + CLI)",
+      "owner_dir": "engine/",
+      "depends_on": [
+        "shared-contract"
+      ],
+      "files": [
+        {
+          "path": "engine/pyproject.toml",
+          "purpose": "PEP 621 package, deps, console_script",
+          "key_contents": "requires-python>=3.12; numpy,rasterio,spectral,scipy; [project.scripts] marsgis-engine=marsgis_engine.cli:main; package-data minerals.json+mica/*.tab+py.typed"
+        },
+        {
+          "path": "engine/requirements.txt",
+          "purpose": "Hash-locked install for Docker --require-hashes",
+          "key_contents": "pinned numpy/rasterio/spectral/scipy + transitive hashes"
+        },
+        {
+          "path": "engine/src/marsgis_engine/__init__.py + _version.py + errors.py + config.py + logging_utils.py + py.typed",
+          "purpose": "Public API surface, version, typed exceptions, defaults, logging, PEP561 marker",
+          "key_contents": "re-export run_sam/SamResult/load_cube/CrismCube/load_reference/Reference; DEFAULT_THRESHOLD_RAD=0.10, DEFAULT_WINDOW_NM=(1000,2600), MARS2000_EQUIRECT_WKT fallback"
+        },
+        {
+          "path": "engine/src/marsgis_engine/io/{envi_reader,reference,raster_writer,provenance,report,fetch}.py",
+          "purpose": "Dual ENVI reader (SPy spectra + rasterio CRS), MICA .tab loader, COG writer, provenance builder, report, opt-in fetcher",
+          "key_contents": "load_cube (nm normalize, bbl, ignore=65535->NaN, CRS fallback logged); write_cog via GTiff->rasterio.shutil.copy(driver=COG); build_provenance conforms to schema"
+        },
+        {
+          "path": "engine/src/marsgis_engine/science/{wavelengths,resample,continuum,sam,pipeline}.py",
+          "purpose": "Band selection, reference resampling, optional continuum removal, vectorized SAM, orchestration",
+          "key_contents": "sam_angles arccos(clip(dot/(norm*norm))) row-block chunked; run_sam -> angle COG(float32 rad NaN nodata)+candidate COG(uint8 0/1/255)+provenance.json+report.txt in input Mars CRS"
+        },
+        {
+          "path": "engine/src/marsgis_engine/cli.py",
+          "purpose": "argparse CLI contract",
+          "key_contents": "run --cube --mineral --reference --method SAM --threshold --out ...; info/list-minerals/fetch-references/version; exit codes 0/2/3/4"
+        },
+        {
+          "path": "engine/src/marsgis_engine/data/{minerals.json,mica/*.tab,mica/NOTICE.txt}",
+          "purpose": "Alias->MICA map + bundled public-domain refs",
+          "key_contents": "carbonate/olivine/clay keys; few-KB .tab + sha256 NOTICE"
+        },
+        {
+          "path": "engine/tests/*.py + synthetic.py + conftest.py",
+          "purpose": "Offline unit + e2e tests on synthetic cube",
+          "key_contents": "test_{sam,resample,continuum,wavelengths,envi_reader,reference,raster_writer,provenance,pipeline,cli}; asserts planted carbonate < threshold, deterministic with --timestamp placeholder"
+        },
+        {
+          "path": "engine/README.md + Makefile + CHANGELOG.md + .gitignore",
+          "purpose": "Docs, dev targets, version history",
+          "key_contents": "VERIFIED-vs-ASSUMED table, ratioed-MICA caveat, candidate!=confirmed disclaimer"
+        }
+      ]
+    },
+    {
+      "component": "backend (FastAPI API + job runner + raster tiler)",
+      "owner_dir": "backend/",
+      "depends_on": [
+        "shared-contract",
+        "engine"
+      ],
+      "files": [
+        {
+          "path": "backend/pyproject.toml + requirements.txt",
+          "purpose": "Package + hash-locked deps",
+          "key_contents": "requires-python>=3.12; fastapi 0.143,uvicorn,sqlmodel,sqlalchemy 2.x,alembic,pydantic 2.14,aiosqlite,asyncpg,geoalchemy2,rasterio,rio-tiler,morecantile,httpx,anyio,structlog; [prod]=arq,redis; depends on marsgis-engine editable; scripts marsgis-api/marsgis-worker"
+        },
+        {
+          "path": "backend/app/main.py + config.py + logging.py + deps.py + errors.py + __init__.py",
+          "purpose": "App factory/lifespan, settings, logging, deps, RFC9457 handlers",
+          "key_contents": "lifespan: migrate()+seed()+start JobRunner; CORS, request-id, max-body guard; problem+json + X-Request-ID"
+        },
+        {
+          "path": "backend/app/core/{constants,tms,colormaps}.py",
+          "purpose": "Mars/CRS constants, custom Mars geographic TMS, colormaps/legend",
+          "key_contents": "MARS_EQC_TMS z0=2x1 256px (matches Trek); build_legend with caveat"
+        },
+        {
+          "path": "backend/app/db/{base,session,models,geo,migrate,seed}.py",
+          "purpose": "Async engine, SQLModel tables, dialect-aware footprint/bbox, hybrid migrate, idempotent seed",
+          "key_contents": "SQLite WAL+busy_timeout; models observation/mineral/map_layer/analysis_job/result; spatial_filter numeric(SQLite)/ST_Intersects(PostGIS); create_all vs alembic by dialect"
+        },
+        {
+          "path": "backend/app/alembic/env.py + versions/0001_initial.py",
+          "purpose": "Postgres migration source of truth",
+          "key_contents": "CREATE EXTENSION postgis; insert IAU 104905 spatial_ref_sys; geometry(POLYGON,104905)+GiST"
+        },
+        {
+          "path": "backend/app/api/router.py + routes/{health,observations,minerals,layers,jobs,results,tiles}.py",
+          "purpose": "All /api routes matching openapi.yaml",
+          "key_contents": "jobs POST->202+quota+enum validation; tiles rio-tiler over MARS_EQC_TMS; results map_layer assembly; traversal-safe download"
+        },
+        {
+          "path": "backend/app/services/jobs/{runner,inprocess,arq_runner,tasks,progress}.py",
+          "purpose": "JobRunner protocol + in-process(default) & arq(prod) backends",
+          "key_contents": "inprocess asyncio.Queue + anyio.to_thread + wait_for timeout; both write analysis_job; tasks.run_analysis_job builds EngineRequest->engine_adapter->persist Result"
+        },
+        {
+          "path": "backend/app/services/{engine_adapter,raster,storage,quota,catalog}.py",
+          "purpose": "Engine seam, COG tiling/preview/bounds, storage, abuse limits, catalogue queries",
+          "key_contents": "EngineAdapter InProcess|Subprocess|Container by ENGINE_MODE w/ rlimits; rio-tiler Reader(tms=MARS_EQC_TMS); quota per-client concurrency+hourly->429"
+        },
+        {
+          "path": "backend/app/worker.py",
+          "purpose": "arq worker entrypoint (prod only)",
+          "key_contents": "WorkerSettings functions=[run_analysis_job]; own engine/sessionmaker; JOB_BACKEND=arq only"
+        },
+        {
+          "path": "backend/app/tests/*",
+          "purpose": "Offline API tests with FakeEngineAdapter + synthetic COG",
+          "key_contents": "conftest + fixtures/make_sample_cog.py; test_{jobs_inprocess,results_tiles,security_limits,seed_and_catalogue}"
+        },
+        {
+          "path": "backend/alembic.ini + README.md + .env.example",
+          "purpose": "Alembic cfg, run docs, env surface",
+          "key_contents": "SQLite one-liner boot; prod switch (DATABASE_URL postgres, JOB_BACKEND=arq, ENGINE_MODE=container); unauth security warning"
+        }
+      ]
+    },
+    {
+      "component": "frontend (React + Vite + CesiumJS SPA)",
+      "owner_dir": "frontend/",
+      "depends_on": [
+        "shared-contract",
+        "backend"
+      ],
+      "files": [
+        {
+          "path": "frontend/package.json + vite.config.ts + tsconfig*.json + eslint.config.js + .prettierrc",
+          "purpose": "Manifest, build/dev/test config, lint/format",
+          "key_contents": "react 19.3,cesium 1.146,zustand 5,immer,uplot,zod 4; vite 7.3.7,plugin-react 5.2.0,vite-plugin-static-copy 4.1.1,ts 5.9.3,vitest 3.2.7; copy Cesium Workers/Assets/Widgets; /api proxy; manualChunks cesium; vitest jsdom"
+        },
+        {
+          "path": "frontend/index.html + .env.example/.development/.production + .gitignore + README.md + public/favicon.svg",
+          "purpose": "Entry HTML, env templates, docs, icon",
+          "key_contents": "VITE_API_URL, VITE_USE_MOCKS, VITE_DEFAULT_BASEMAP; offline mock note; verified-basemap + Mars-ellipsoid notes"
+        },
+        {
+          "path": "frontend/src/main.tsx + App.tsx + env.ts + vite-env.d.ts",
+          "purpose": "Bootstrap (Mars ellipsoid + CESIUM_BASE_URL before React), composition, typed env",
+          "key_contents": "installMarsEllipsoid() pre-Viewer; persistent GlobeView + AppShell; useUrlSync/useLayerSync once"
+        },
+        {
+          "path": "frontend/src/config/{constants,cesium,basemaps}.ts",
+          "purpose": "Domain constants, Mars Viewer presets, verified basemap specs",
+          "key_contents": "MARS_RADII, REGIONS.nili_fossae; VIEWER_OPTIONS (no Earth chrome, requestRenderMode); TREK_TEMPLATE + viking/mola products"
+        },
+        {
+          "path": "frontend/src/cesium/{MarsViewer,imageryProviders,LayerManager,FootprintLayer,ResultOverlay,picking,geo,markers}.ts",
+          "purpose": "Imperative Cesium layer owned by one persistent component; store->Cesium one-way reconciler",
+          "key_contents": "GeographicTilingScheme providers (zyx basemaps / zxy result); LayerManager injectable viewer iface (unit-testable); pickEllipsoid; requestRender after every mutation"
+        },
+        {
+          "path": "frontend/src/components/**",
+          "purpose": "Dock shell + mode panels + inspector + search + common primitives",
+          "key_contents": "layout(AppShell/TopBar/ModeTabs/SidePanel/StatusBar), panels(LayerExplorer/DataCatalogue/Analysis/Results/Inspector), analysis(MethodSelect/ReferenceSpectrumSelect/SamParams/JobProgress), results(ResultList/ClassStats/ExportButtons/Legend), inspector(SpectrumChart uPlot/SpectralAngleBadge), search(GazetteerSearch), common barrel"
+        },
+        {
+          "path": "frontend/src/store/**",
+          "purpose": "Zustand store slices + selectors",
+          "key_contents": "index.ts persist(immer(...slices)) partialize camera/basemapId/panels; {view,layer,catalog,analysis,result,inspector,gazetteer}Slice.ts; vanilla store for LayerManager"
+        },
+        {
+          "path": "frontend/src/api/**",
+          "purpose": "Typed fetch client + per-resource modules + zod validators + offline mocks",
+          "key_contents": "client.ts (apiFetch, mock switch); catalog/analysis/results/gazetteer/layers.ts aligned to openapi.yaml; validators.ts (zResultMeta/zPixelSpectrum/zFeatureCollection); mocks.ts from src/data/*"
+        },
+        {
+          "path": "frontend/src/hooks/** + utils/** + styles/** + data/** + test/**",
+          "purpose": "Store<->Cesium glue, formatting, styling, bundled offline samples, unit tests",
+          "key_contents": "useLayerSync/useCatalog/useAnalysisJob/usePixelInspector/useGazetteer/useUrlSync; format.normalizeLon; LayerManager/geo/format/layerSlice tests (no WebGL)"
+        }
+      ]
+    },
+    {
+      "component": "infra-root (Docker, compose, Makefile, root config, service Dockerfiles)",
+      "owner_dir": "/ (+docker/)",
+      "depends_on": [
+        "frontend",
+        "backend",
+        "engine",
+        "shared-contract"
+      ],
+      "files": [
+        {
+          "path": "docker-compose.yml + docker-compose.override.yml",
+          "purpose": "Orchestration + dev overlay",
+          "key_contents": "name marsgis; db postgis/postgis:17-3.5(healthcheck,127.0.0.1:5432), backend(depends db healthy,:8000), frontend(:8080); engine/worker/redis/titiler behind profiles; override bind-mounts+--reload"
+        },
+        {
+          "path": "Makefile + .env.example + .editorconfig + .pre-commit-config.yaml + .hadolint.yaml",
+          "purpose": "Task entrypoint, env template, hygiene",
+          "key_contents": "up/down/dev/test/lint/build/engine-image/db-upgrade/seed (docker compose); DATABASE_URL both forms; TREK_* verified; gitleaks + check-added-large-files --maxkb=256"
+        },
+        {
+          "path": "README.md + LICENSE + CHANGELOG.md + CITATION.cff + .zenodo.json",
+          "purpose": "Root docs, MIT license, release metadata",
+          "key_contents": "cp .env.example .env && make up; frontend 127.0.0.1:8080 backend :8000; unauth-dev security note; candidate-not-confirmed disclaimer"
+        },
+        {
+          "path": "docker/README.md + docker/postgres/initdb/01-postgis.sql",
+          "purpose": "Build-context convention + PostGIS bootstrap",
+          "key_contents": "CREATE EXTENSION postgis/postgis_raster"
+        },
+        {
+          "path": "engine/Dockerfile + engine/.dockerignore",
+          "purpose": "Standalone engine image ghcr.io/<account>/marsgis-engine",
+          "key_contents": "python:3.12-slim multi-stage; pip --require-hashes; non-root uid 10001; ENTRYPOINT marsgis-engine; no data bundled"
+        },
+        {
+          "path": "backend/Dockerfile + backend/.dockerignore + backend/entrypoint.sh",
+          "purpose": "Backend image + migrate-then-serve",
+          "key_contents": "python:3.12-slim; venv-copy; HEALTHCHECK urllib /api/health; entrypoint alembic upgrade head then uvicorn app.main:app"
+        },
+        {
+          "path": "frontend/Dockerfile + frontend/.dockerignore + frontend/nginx/default.conf.template",
+          "purpose": "Node build -> nginx serve",
+          "key_contents": "node:24 build (VITE_* build args) -> nginxinc/nginx-unprivileged:8080; SPA fallback; CSP allows Cesium workers/wasm + trek.nasa.gov; /healthz"
+        }
+      ]
+    },
+    {
+      "component": "ci-github (Actions, Dependabot, governance)",
+      "owner_dir": ".github/",
+      "depends_on": [
+        "infra-root",
+        "frontend",
+        "backend",
+        "engine"
+      ],
+      "files": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "purpose": "PR/push CI, no image push, fully offline",
+          "key_contents": "frontend(node24: ci,lint,typecheck,vitest,build); python(3.12: ruff,pytest offline on synthetic); docker-build(buildx no-push, smoke marsgis-engine --help, hadolint); openapi equality check (/openapi.json == contracts/openapi.yaml)"
+        },
+        {
+          "path": ".github/workflows/release.yml",
+          "purpose": "Tag v* -> multi-arch GHCR push + SBOM/provenance + Release",
+          "key_contents": "setup-qemu/buildx; metadata-action tags; build-push amd64+arm64 engine/backend/frontend; attest-build-provenance; gh-release"
+        },
+        {
+          "path": ".github/dependabot.yml + CODEOWNERS + pull_request_template.md",
+          "purpose": "Dep updates, review routing, PR norms",
+          "key_contents": "npm/pip/docker/actions weekly grouped; concern ownership; no-bulk-data + VERIFIED/ASSUMED checklist"
+        }
+      ]
+    },
+    {
+      "component": "docs",
+      "owner_dir": "docs/",
+      "depends_on": [
+        "infra-root",
+        "backend",
+        "frontend",
+        "engine",
+        "shared-contract"
+      ],
+      "files": [
+        {
+          "path": "docs/DEVELOPMENT.md",
+          "purpose": "Dev workflow + pin rationale",
+          "key_contents": "Docker authoritative; Python 3.12 (host 3.14 best-effort via uv/pyenv), Node 24 (host 26); engine CLI usage; SQLite<->PostGIS switch"
+        },
+        {
+          "path": "docs/RELEASING.md",
+          "purpose": "SemVer + release + Zenodo",
+          "key_contents": "tag vX.Y.Z triggers release.yml; image tags; verify digest; archive run outputs w/ engine digest+obs id"
+        },
+        {
+          "path": "docs/DATA_LICENSES.md",
+          "purpose": "Provenance, attribution, disclaimer",
+          "key_contents": "NASA fetched not redistributed; CRISM/MOLA/Viking/Trek attributions; MIT code / CC0 samples / CC-BY docs; candidate!=confirmed"
+        },
+        {
+          "path": "docs/ARCHITECTURE.md",
+          "purpose": "This reconciled contract",
+          "key_contents": "result->map flow, job lifecycle, EngineAdapter modes, DB dialect strategy, coordinate convention"
+        }
+      ]
+    }
+  ],
+  "verification_plan": [
+    "Clean clone sanity: from repo root, `git status` shows the 4 scaffolded dirs; confirm shared-contract files exist and are frozen: `python3 -c \"import json;json.load(open('contracts/enums.json'))\"` and `test -f contracts/openapi.yaml`.",
+    "Contract integrity: in a 3.12 venv `pip install pyyaml openapi-spec-validator pydantic>=2 && python contracts/gen_openapi.py && openapi-spec-validator contracts/openapi.yaml` (expect 12 paths / 51 schemas, exit 0).",
+    "Engine offline run on synthetic data: `cd engine && pip install -e '.[dev]' && marsgis-engine run --cube sample_data/sample_crism_nili.img --mineral carbonate --method SAM --threshold 0.1 --out /tmp/sam_out --timestamp placeholder` -> expect <prefix>_SAM_angle.tif (COG float32), _SAM_candidate.tif (uint8), provenance.json, report.txt; planted carbonate region flagged as candidate; `gdalinfo /tmp/sam_out/*_SAM_angle.tif` confirms COG + Mars CRS.",
+    "Engine tests: `cd engine && pytest -q` (SAM identical->0, scaled->0, orthogonal->pi/2; e2e carbonate < olivine; deterministic with placeholder timestamp).",
+    "Backend offline tests: `cd backend && pip install -e '.[dev]' && pytest -q` using FakeEngineAdapter + synthetic COG (job lifecycle queued->succeeded, tiles return PNG, security limits 422/404/429, seed idempotent, GET /observations?region=Nili Fossae returns verified rows).",
+    "Backend boots zero-setup: `cd backend && uvicorn app.main:app --port 8000` with default SQLite -> `curl -s localhost:8000/api/health` returns status ok, db up, implemented_algorithms=['SAM']; `curl -s localhost:8000/api/layers` returns the verified Trek layers; assert `diff <(curl -s localhost:8000/openapi.json | python -c 'import sys,yaml,json;print(json.dumps(json.load(sys.stdin),sort_keys=True))') ...` matches contracts/openapi.yaml schema set.",
+    "Live tile fetch (data path proven): `curl -s -o /dev/null -w '%{http_code} %{content_type}\\n' 'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0//default/default028mm/0/0/0.jpg'` expect 200 image/jpeg (RE-VERIFIED this session; MOLA-DEM/THEMIS at /0/0/0.png also 200).",
+    "Frontend build + tests: `cd frontend && npm ci && npm run lint && npm run typecheck && npm run test -- --run && npm run build` -> dist/ emitted, Cesium assets copied, vitest LayerManager/geo/format pass with no WebGL.",
+    "Frontend offline smoke: `VITE_USE_MOCKS=true npm run dev` -> globe renders Mars (dark base even if tiles blocked), footprints from bundled sample draw, a mock SAM job completes and overlays a result with the candidate caveat visible.",
+    "Full stack via Docker: `cp .env.example .env && make up` (docker compose, db+backend+frontend) -> `curl -s localhost:8000/api/health` ok, open http://127.0.0.1:8080, verify globe + Trek basemap + Nili Fossae footprints; submit a SAM job (carbonate, frt00003e12), poll to succeeded, confirm result tiles register on the globe and the StatusBar/legend show 'candidate spectral match, not a confirmed mineral deposit'.",
+    "Production path smoke (config only): `DATABASE_URL=postgresql+psycopg://... JOB_BACKEND=arq docker compose --profile worker up` -> alembic upgrade head creates PostGIS 104905 geometry + GiST; a job routed through arq+Redis reaches succeeded identically.",
+    "CI parity: push a branch -> ci.yml frontend/python/docker-build jobs green offline, openapi equality check passes, hadolint clean."
+  ],
+  "v1_acceptance_checklist": [
+    "App runs out-of-the-box with NO extra infra: `cp .env.example .env && make up` (or backend `uvicorn` + frontend `npm run dev`) brings up a working map on SQLite + in-process worker + in-process engine, seeded with verified Nili Fossae data.",
+    "Primary product is the map: one persistent CesiumJS Mars globe (Mars ellipsoid radii 3396190/3396190/3376200, GeographicTilingScheme 2x1) with the verified Viking + MOLA-ClrShade Trek basemaps rendering.",
+    "CRISM MTRDR footprints over Nili Fossae draw as clickable polygons from GET /api/observations (seeded offline; frt00003e12 the primary scene).",
+    "End-to-end SAM experiment works: pick observation + MICA carbonate reference -> POST /api/analysis-jobs (202) -> poll -> succeeded -> AnalysisResult with angle COG + candidate mask COG + stats + legend + provenance.",
+    "Result overlays register pixel-for-pixel on the globe via GET /api/results/{id}/tiles/{z}/{x}/{y}.png over the custom Mars geographic TMS (geographic, NOT WebMercator); SingleTile /preview.png fallback works for tiny bboxes.",
+    "Pixel inspector: clicking a result pixel plots its reflectance-vs-wavelength spectrum against the MICA reference (uPlot) with the spectral angle shown.",
+    "Scientific honesty enforced: CANDIDATE_MATCH_CAVEAT is a required field on AnalysisResult/SummaryStats/Legend/Provenance and visibly rendered; the continuous angle raster is always retained; no result is ever labelled a confirmed deposit.",
+    "Contract is single-source and drift-proof: app.schemas -> contracts/openapi.yaml generated; frontend/src/types mirror is tsc --strict clean; backend /openapi.json equals the committed spec (CI-checked); contract_version 1.0.0.",
+    "Data fetched via APIs/services only (ODE, PDS archive, MICA, USGS pygeoapi, Trek) \u2014 no bulk archive in the repo; only tiny synthetic/sample fixtures committed; pipeline + all tests run fully offline.",
+    "Coordinates consistent everywhere: Mars IAU 2000 degrees, east-positive lon [-180,180], planetocentric lat [-90,90]; footprint centroids land on the correct basemap features.",
+    "Production path available by config only: DATABASE_URL->PostGIS, JOB_BACKEND=arq (--profile worker), ENGINE_MODE=container \u2014 no code change.",
+    "Standalone engine artifact: marsgis-engine CLI + Python API + ghcr.io/<account>/marsgis-engine image, versioned from git tag.",
+    "Quality gates green: frontend lint+typecheck+vitest+build; backend+engine ruff+pytest; docker-build smoke; all offline in CI.",
+    "Security posture explicit: dev stack binds 127.0.0.1, unauthenticated job submission is hard-bounded (enum method, AOI/count caps, per-client concurrency+hourly quota, per-job timeout+rlimits), REQUIRE_API_KEY gate available and flagged mandatory for public hosting.",
+    "Builders worked in parallel without collision: every needed file lives in exactly one owner_dir unit; shared-contract files frozen and depended upon."
+  ],
+  "open_questions_with_recommended_defaults": [
+    {
+      "question": "GHCR account/namespace for ghcr.io/<account>/marsgis-{engine,backend,frontend}.",
+      "recommended_default": "Use the repository owner's GitHub login as ${GHCR_OWNER}, templated in .env.example and release.yml; first publish sets package visibility to public and links it to the repo."
+    },
+    {
+      "question": "MICA reference spectrum numeric values: engine bundles public-domain .tab, but the authoritative exact extract vs the data-access synthetic carbonate_reference.csv.",
+      "recommended_default": "Bundle the real public-domain MICA .tab (crism_typespec_fe_ca_carbonate/fe_olivine/fe_smectite) in engine/src/marsgis_engine/data/mica/ as the production references; keep the clearly-labelled synthetic carbonate_reference.csv only for the deterministic offline test, never presented as real."
+    },
+    {
+      "question": "titiler as a separate service vs rio-tiler embedded in the backend for result tiling.",
+      "recommended_default": "Embed rio-tiler in the backend tiles route (no extra service for v1); keep titiler behind an opt-in compose --profile tiles for scale-out later."
+    },
+    {
+      "question": "arm64 (Apple Silicon) Postgres image, since postgis/postgis:17-3.5 showed amd64 only on the page checked.",
+      "recommended_default": "Run postgis/postgis:17-3.5 under emulation for local dev (Postgres is not perf-critical locally); document imresamu/postgis:17-3.5 as the native-arm64 swap in docker/README.md; CI uses amd64 runners."
+    },
+    {
+      "question": "THEMIS Night IR / TES Albedo / mola_roughness / MOLA+HRSC-blend layers beyond the 4 re-verified basemaps.",
+      "recommended_default": "Ship only the 4 re-verified layers (Viking jpg, MOLA-ClrShade jpg, MOLA-DEM png, THEMIS-DayIR png) as default_visible=true; include the others with availability=unconfirmed and probe each product's WMTSCapabilities/sample tile at startup before enabling."
+    },
+    {
+      "question": "Idempotency-Key handling on POST /api/analysis-jobs.",
+      "recommended_default": "Honor the header when present (dedupe to the existing job within a short window) but treat it as optional; absence just creates a new job."
+    },
+    {
+      "question": "Result raster default colormap + value_range for the SAM angle overlay.",
+      "recommended_default": "magma sequential, rescale 0..threshold_rad with transparent nodata and alpha=0 above threshold, baked server-side; legend units = radians with a degree equivalent and the candidate caveat."
+    },
+    {
+      "question": "CesiumJS Ion token (Cesium normally expects one).",
+      "recommended_default": "Run token-free: no Cesium Ion assets are used (custom Mars ellipsoid + Trek imagery + EllipsoidTerrainProvider only); leave Ion token unset and disable Ion-dependent widgets."
+    }
+  ]
+}

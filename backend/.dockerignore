@@ -1,0 +1,37 @@
+# MarsGIS backend build context — keep it tight.
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# Python caches / build output
+**/__pycache__/
+**/*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Tests + docs (not needed in the runtime image)
+tests/
+docs/
+
+# Local databases / storage / data
+storage/
+*.db
+*.sqlite
+*.sqlite3
+data/

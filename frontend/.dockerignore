@@ -1,0 +1,22 @@
+# MarsGIS frontend build context — keep it tight.
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+
+# Dependencies + build output (reinstalled / rebuilt inside the image)
+node_modules/
+dist/
+.vite/
+
+# Secrets / local env (VITE_* are passed as build args, not copied files)
+.env
+.env.*
+!.env.example
+
+# Caches / coverage / editor
+coverage/
+.eslintcache
+docs/
+.DS_Store

@@ -1,0 +1,34 @@
+# CODEOWNERS — route reviews by concern. The infra concern owns the
+# containerization + CI + root-infra shared-contract files (even those nested in
+# sibling service dirs). Application-source units own their own trees.
+
+# Infra / devops-reproducibility
+/docker/                      @marsgis/infra
+/.github/                     @marsgis/infra
+/docker-compose.yml           @marsgis/infra
+/docker-compose.override.yml  @marsgis/infra
+/Makefile                     @marsgis/infra
+/.env.example                 @marsgis/infra
+/.editorconfig                @marsgis/infra
+/.hadolint.yaml               @marsgis/infra
+/.pre-commit-config.yaml      @marsgis/infra
+/LICENSE                      @marsgis/infra
+/CHANGELOG.md                 @marsgis/infra
+/CITATION.cff                 @marsgis/infra
+/.zenodo.json                 @marsgis/infra
+
+# Shared-contract files owned by infra but nested in service dirs.
+/engine/Dockerfile            @marsgis/infra
+/engine/.dockerignore         @marsgis/infra
+/backend/Dockerfile           @marsgis/infra
+/backend/.dockerignore        @marsgis/infra
+/backend/entrypoint.sh        @marsgis/infra
+/frontend/Dockerfile          @marsgis/infra
+/frontend/.dockerignore       @marsgis/infra
+/frontend/nginx/              @marsgis/infra
+
+# Application source (owned by their respective concerns).
+/engine/src/                  @marsgis/engine
+/backend/app/                 @marsgis/backend
+/frontend/src/                @marsgis/frontend
+/contracts/                   @marsgis/shared-contract

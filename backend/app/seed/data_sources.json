@@ -1,0 +1,149 @@
+{
+  "_comment": "MarsGIS data-access source registry. Verified reachable 2026-10-11 unless marked assumed. Owned by the data-access concern. Backend reads this to know where/how to fetch each dataset. 'live_proxy' = backend fetches on demand and caches; 'bundled' = ships in repo for offline/CI.",
+  "verified_on": "2026-10-11",
+  "sources": {
+    "crism_mtrdr_discovery": {
+      "name": "PDS Orbital Data Explorer (ODE) REST API — CRISM MTRDR discovery",
+      "access_method": "REST API (GET; XML or JSON)",
+      "base_url": "https://oderest.rsl.wustl.edu/live2/",
+      "example_url": "https://oderest.rsl.wustl.edu/live2/?query=product&results=m&output=JSON&target=mars&ihid=MRO&iid=CRISM&pt=MTRDR&westernlon=74&easternlon=78&minlat=20&maxlat=24&limit=10",
+      "verified": true,
+      "query_params": {
+        "query": "product",
+        "target": "mars",
+        "ihid": "MRO (instrument host)",
+        "iid": "CRISM (instrument)",
+        "pt": "MTRDR (product type)",
+        "spatial": "westernlon,easternlon,minlat,maxlat (0-360 or -180..180 lon both accepted)",
+        "productid": "e.g. frt00003e12_07_if166 (exact/prefix product match)",
+        "results": "c=count, o=ode_id only, m=metadata+footprint, f=file list, fp=files+product",
+        "output": "JSON | XML",
+        "limit": "max rows; offset via 'offset'"
+      },
+      "response_fields": [
+        "ode_id", "pdsid", "Product_name", "Observation_id", "Observation_type",
+        "Center_latitude", "Center_longitude", "Minimum/Maximum_latitude",
+        "Westernmost/Easternmost_longitude", "Footprint_geometry (WKT POLYGON lon lat)",
+        "UTC_start_time", "Comment", "LabelURL", "ProductURL", "FilesURL",
+        "Product_files[].{Type,FileName,URL,KBytes}"
+      ],
+      "fetch_strategy": "live_proxy: backend calls ODE for footprints/metadata, caches to DB; seeded offline by backend/app/seed/crism_nili_catalogue.json. Nili bbox [74,20,78,24] returns 23 MTRDR products.",
+      "notes": "ode_id is ODE's internal id; pdsid/Product_name is the PDS product. CRISM product types also include DDR, TRDR; we use MTRDR (map-projected)."
+    },
+    "crism_mtrdr_archive": {
+      "name": "PDS Geosciences Node — CRISM MTRDR archive (mro-m-crism-5-rdr-mptargeted-v1)",
+      "access_method": "HTTPS static file download (Apache directory listings)",
+      "base_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/",
+      "example_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_013/frt00003e12/frt00003e12_07_if166j_mtr3.img",
+      "verified": true,
+      "product_layout": {
+        "dir": "mtrdr/<YYYY>/<YYYY_DOY>/<obsid>/ (browse products under browse/<...>/)",
+        "files_per_observation": {
+          "_if###j_mtr3.{img,hdr,lbl,xml}": "I/F corrected map-projected spectral cube (ENVI). PRIMARY input to the engine.",
+          "_in###j_mtr3.*": "I/F not-corrected cube",
+          "_sr###j_mtr3.*": "surface-reflectance (Lambert-corrected) cube",
+          "_su###j_mtr3.*": "summary parameters cube (pre-computed mineral indices)",
+          "_de###l_mtr1.*": "DDR geometry/backplanes (lat, lon, incidence, emission, ...)",
+          "_wv###j_mtr3.tab": "wavelength table (ASCII)",
+          "browse/.../_br*_mtr3.{img,png,...}": "RGB browse/quicklook (e.g. BRCAR=carbonates, BRCHL=chloride)"
+        },
+        "envi_cube_format": {
+          "verified_from": "frt00003e12_07_if166j_mtr3.hdr",
+          "samples": 843, "lines": 828, "bands": 489,
+          "data_type": "4 (32-bit IEEE float)", "interleave": "bsq",
+          "byte_order": "0 (little-endian)", "header_offset": 0,
+          "data_ignore_value": 65535.0,
+          "wavelength_units": "Nanometers (per-band list in .hdr, ~436–3920 nm)",
+          "projection": "MRO Mars Equirectangular IAU2000, standard parallel 20N",
+          "reader": "GDAL/rasterio ENVI driver (verified: gdalinfo reads it) or spectral-python envi.open(.hdr)"
+        }
+      },
+      "fetch_strategy": "live_proxy: backend streams the specific _if cube + .hdr (+ _de DDR for geometry) for a chosen observation to the engine on demand, caches to object store/disk. NEVER bulk-mirror the archive. For offline/CI the engine uses the bundled synthetic cube.",
+      "notes": "A single if cube is ~100–300 MB. Fetch only the cube(s) the user analyses. File URLs are discoverable via the ODE 'results=f' file list (authoritative) rather than guessing DOY paths."
+    },
+    "crism_mica_reference_library": {
+      "name": "CRISM MICA Type Spectra Library (mro-m-crism-4-typespec-v1)",
+      "access_method": "HTTPS static file download (ASCII .tab + PDS .lbl)",
+      "base_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-4-typespec-v1/mrocr_8001/data/",
+      "example_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-4-typespec-v1/mrocr_8001/data/crism_typespec_fe_ca_carbonate.tab",
+      "verified": true,
+      "library": "31 ratioed type spectra, 28 CRISM observations (Viviano-Beck et al. 2014, doi:10.1002/2014JE004627)",
+      "relevant_minerals": {
+        "carbonate": "crism_typespec_fe_ca_carbonate.tab",
+        "olivine": "crism_typespec_fe_olivine.tab",
+        "clay_al_smectite": "crism_typespec_al_smectite.tab",
+        "clay_fe_smectite": "crism_typespec_fe_smectite.tab"
+      },
+      "tab_format": {
+        "verified_from": "crism_typespec_fe_ca_carbonate.lbl",
+        "type": "ASCII FIXED_LENGTH, 480 rows, 7 columns, 63 bytes/row",
+        "columns": [
+          "1 WAVELENGTH (MICROMETERS)",
+          "2 CRISM RATIOED I/F CORRECTED (use this for SAM)",
+          "3 CRISM RATIOED I/F",
+          "4 CRISM I/F NUMERATOR CORRECTED",
+          "5 CRISM I/F NUMERATOR",
+          "6 CRISM I/F DENOMINATOR CORRECTED",
+          "7 CRISM I/F DENOMINATOR"
+        ],
+        "range_um": [0.436, 3.897],
+        "sam_usage": "resample the cube's band wavelengths onto column1 (um; cube hdr is nm → /1000), compare against column2."
+      },
+      "fetch_strategy": "live_proxy with on-disk cache (library is tiny; a backend bootstrap can mirror all 31 .tab once). Offline/CI uses the bundled SYNTHETIC carbonate_reference.csv.",
+      "notes": "These are ratioed type spectra (numerator/denominator ratioing already applied) — the correct reference form for SAM against ratioed scene spectra."
+    },
+    "usgs_sim3292_geologic_map": {
+      "name": "USGS SIM 3292 — Global Geologic Map of Mars",
+      "access_method": "OGC API - Features (live, GeoJSON) + static GIS download",
+      "live_service": {
+        "base_url": "https://astrogeology.usgs.gov/pygeoapi",
+        "collections": {
+          "units": "https://astrogeology.usgs.gov/pygeoapi/collections/mars/sim3292_global_geologic_map/units/items",
+          "contacts": "https://astrogeology.usgs.gov/pygeoapi/collections/mars/global_geologic_map/contacts/items",
+          "structure": "https://astrogeology.usgs.gov/pygeoapi/collections/mars/global_geologic_map/structure/items"
+        },
+        "example_url": "https://astrogeology.usgs.gov/pygeoapi/collections/mars/sim3292_global_geologic_map/units/items?bbox=74,20,78,24&limit=50&f=json",
+        "formats": "GeoJSON (f=json / application/geo+json), JSON-LD, HTML; bbox filtering verified",
+        "unit_properties": ["objectid", "unit", "unitdesc", "spharea_km", "shape_area", "shape_leng"],
+        "verified": true
+      },
+      "static_download": {
+        "pubs_landing": "https://pubs.usgs.gov/sim/3292/",
+        "astro_item": "https://astrogeology.usgs.gov/search/map/mars_geologic_map",
+        "verified": true
+      },
+      "fetch_strategy": "live_proxy: backend fetches units/contacts GeoJSON by bbox from pygeoapi and serves to Cesium as a GeoJsonDataSource overlay; cache per-bbox. Bundle a small Nili-Fossae-clipped GeoJSON (units+contacts within [74,20,78,24]) for offline. Note the 'units' collection uses prefix sim3292_global_geologic_map while contacts/structure use global_geologic_map.",
+      "notes": "This is a LIVE vector service (OGC API Features ~ WFS), not just a file download — ideal for a clean vector overlay with queryable unit descriptions."
+    },
+    "mars_trek_basemaps": {
+      "name": "NASA Mars Trek WMTS basemaps/overlays",
+      "access_method": "WMTS tile service (REST tiles + WMTSCapabilities)",
+      "detail_file": "backend/app/seed/mars_trek_layers.json",
+      "verified": true,
+      "fetch_strategy": "live_proxy OR direct-from-browser: Cesium requests tiles straight from trek.nasa.gov. Backend optionally proxies/caches to control CORS and rate. No bundling (tiles are external; offline map falls back to a single low-zoom Viking tile cached in frontend assets).",
+      "verified_products": {
+        "basemap_color": "Mars_Viking_MDIM21_ClrMosaic_global_232m (jpg)",
+        "basemap_relief": "Mars_MGS_MOLA_ClrShade_merge_global_463m (jpg)",
+        "elevation_dem": "mola128_mola64_merge_90Nto90S_SimpleC_clon0 (png)",
+        "themis_day_ir": "THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018 (png)",
+        "themis_night_ir": "THEMIS_NightIR_ControlledMosaics_100m_v2_oct2018 (png)"
+      },
+      "notes": "jpg vs png differs per product; read ResourceURL from each product's WMTSCapabilities. Earlier guessed ids (Mars_MGS_MOLA_DEM_mosaic_global_463m, Mars_MO_THEMIS-IR-Day_...) returned 404 and are WRONG."
+    },
+    "bundled_sample_data": {
+      "name": "Offline sample/synthetic data (ships in repo)",
+      "access_method": "local files (no network)",
+      "location": "engine/sample_data/",
+      "verified": true,
+      "generator": "engine/sample_data/make_sample_cube.py (numpy only; run: python3 -I make_sample_cube.py --out .)",
+      "files": {
+        "sample_crism_nili.img/.hdr": "48x48x60 ENVI BSQ float32 synthetic cube (~540 KB). GDAL-readable (verified via gdalinfo). Carbonate + olivine signatures in known regions.",
+        "carbonate_reference.csv": "synthetic carbonate end-member on the cube's wavelength grid (wavelength_um,ratioed_if) for SAM.",
+        "sample_truth.json": "pixel-region ground truth for deterministic test assertions."
+      },
+      "verified_pipeline_check": "SAM(carbonate pixel, carbonate ref)=0.23deg vs SAM(olivine pixel, carbonate ref)=7.65deg — discriminates correctly, offline.",
+      "fetch_strategy": "bundled: used by CI and by the app in offline mode; the engine's loader accepts either this synthetic cube or a real fetched MTRDR cube (same ENVI contract).",
+      "notes": "SYNTHETIC. Must never be presented as a real Mars mineral detection."
+    }
+  }
+}

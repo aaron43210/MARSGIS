@@ -1,0 +1,30 @@
+# MarsGIS engine — pinned runtime dependencies.
+#
+# HASHES: This file intentionally ships PINNED VERSIONS WITHOUT sha256 hashes.
+# A fully hash-locked lockfile for `pip install --require-hashes` is generated
+# at integration/build time (it must be resolved against the pinned Python 3.12
+# container with network access), e.g.:
+#
+#     pip install pip-tools
+#     pip-compile --generate-hashes --output-file requirements.lock.txt \
+#         --extra "" pyproject.toml
+#
+# Fabricating hashes offline here would be dishonest and would break installs,
+# so they are deliberately omitted. The versions below are the resolved,
+# verified-installable set for this project (see engine/README.md).
+#
+# Top-level runtime deps (mirror pyproject [project.dependencies]):
+numpy==2.5.3
+rasterio==1.5.2
+spectral==0.25
+scipy==1.18.1
+affine==2.4.0
+
+# Key transitive dependencies (rasterio / numpy stack) — pinned for
+# reproducibility; the generated lockfile enumerates the complete closure.
+click==8.3.0
+click-plugins==1.1.1
+cligj==0.7.2
+attrs==25.4.0
+certifi==2026.4.26
+pyparsing==3.2.5

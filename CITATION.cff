@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+title: MarsGIS
+message: "If you use this software, please cite it using these metadata."
+type: software
+authors:
+  - given-names: Student
+    family-names: Researcher
+    affiliation: "MSc capstone (placeholder — update before release)"
+  - given-names: Supervisor
+    family-names: Name
+    affiliation: "Supervisor (placeholder — update before release)"
+abstract: >-
+  MarsGIS is an interactive Mars map/dashboard (a CesiumJS 3D Mars globe) with an
+  integrated hyperspectral analysis engine that runs the Spectral Angle Mapper
+  (SAM) on CRISM MTRDR cubes. Results are candidate spectral matches and are
+  never presented as confirmed mineral deposits. NASA source data is fetched via
+  services at runtime and is not redistributed.
+keywords:
+  - Mars
+  - GIS
+  - CesiumJS
+  - hyperspectral
+  - CRISM
+  - Spectral Angle Mapper
+  - Nili Fossae
+  - planetary science
+license: MIT
+repository-code: "https://github.com/marsgis/marsgis"
+# version and doi are filled from the release tag / first Zenodo mint.
+version: 0.0.0
+doi: 10.5281/zenodo.0000000

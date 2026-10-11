@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marsgis/engine/provenance.schema.json",
+  "title": "MarsGIS engine provenance record",
+  "description": "Machine-readable reproducibility record emitted by marsgis-engine for one SAM run. schema_version gates compatibility.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "software",
+    "algorithm",
+    "created_utc",
+    "inputs",
+    "parameters",
+    "results",
+    "environment",
+    "disclaimer"
+  ],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "software": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"}
+      }
+    },
+    "engine_image": {"type": "string"},
+    "algorithm": {"type": "string", "const": "SAM"},
+    "created_utc": {"type": "string"},
+    "inputs": {
+      "type": "object",
+      "required": ["cube", "reference"],
+      "properties": {
+        "cube": {
+          "type": "object",
+          "required": [
+            "path", "sha256", "shape", "crs", "crs_is_fallback",
+            "transform", "n_bands", "n_good_bands"
+          ],
+          "properties": {
+            "path": {"type": "string"},
+            "label_id": {"type": "string"},
+            "sha256": {"type": "string"},
+            "shape": {"type": "array", "items": {"type": "integer"}, "minItems": 3, "maxItems": 3},
+            "crs": {"type": "string"},
+            "crs_is_fallback": {"type": "boolean"},
+            "transform": {"type": "array", "items": {"type": "number"}},
+            "n_bands": {"type": "integer"},
+            "n_good_bands": {"type": "integer"},
+            "ignore_value": {"type": ["number", "null"]},
+            "wavelength_units_original": {"type": "string"}
+          }
+        },
+        "reference": {
+          "type": "object",
+          "required": ["name", "mica_key", "source", "sha256", "n_points"],
+          "properties": {
+            "name": {"type": "string"},
+            "mica_key": {"type": "string"},
+            "source": {"type": "string"},
+            "sha256": {"type": "string"},
+            "n_points": {"type": "integer"},
+            "units_original": {"type": "string"}
+          }
+        }
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "required": [
+        "threshold", "threshold_units", "wavelength_window_nm",
+        "bands_used", "mask_bad_bands", "continuum_removal", "resample_method"
+      ],
+      "properties": {
+        "threshold": {"type": "number"},
+        "threshold_units": {"type": "string"},
+        "wavelength_window_nm": {
+          "type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2
+        },
+        "bands_used": {"type": "integer"},
+        "mask_bad_bands": {"type": "boolean"},
+        "continuum_removal": {"type": "boolean"},
+        "resample_method": {"type": "string"}
+      }
+    },
+    "results": {
+      "type": "object",
+      "required": [
+        "n_valid_pixels", "n_candidate_pixels", "candidate_fraction"
+      ],
+      "properties": {
+        "n_pixels": {"type": "integer"},
+        "n_valid_pixels": {"type": "integer"},
+        "n_candidate_pixels": {"type": "integer"},
+        "candidate_fraction": {"type": "number"},
+        "angle_min": {"type": ["number", "null"]},
+        "angle_max": {"type": ["number", "null"]},
+        "angle_mean": {"type": ["number", "null"]},
+        "angle_median": {"type": ["number", "null"]},
+        "angle_median_candidates": {"type": ["number", "null"]}
+      }
+    },
+    "environment": {
+      "type": "object",
+      "required": ["python", "numpy", "rasterio", "spectral", "gdal", "platform"],
+      "properties": {
+        "python": {"type": "string"},
+        "numpy": {"type": "string"},
+        "scipy": {"type": "string"},
+        "rasterio": {"type": "string"},
+        "spectral": {"type": "string"},
+        "gdal": {"type": "string"},
+        "platform": {"type": "string"}
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "file": {"type": "string"},
+          "sha256": {"type": "string"},
+          "size_bytes": {"type": "integer"}
+        }
+      }
+    },
+    "disclaimer": {"type": "string"}
+  }
+}

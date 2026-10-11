@@ -1,0 +1,44 @@
+# MarsGIS — developer ergonomics overlay (auto-merged by `docker compose`).
+#
+# The base docker-compose.yml stays production-leaning; this override adds dev
+# conveniences and is applied automatically for `docker compose up` /`make dev`.
+#
+# Backend: live-reload against bind-mounted source. The image ENTRYPOINT still
+# runs migrations first, then execs this reload command.
+#
+# Frontend: the base nginx service continues to serve the production build. For
+# a hot-reloading SPA, run the Vite dev server ON THE HOST instead:
+#     cd frontend && npm install && npm run dev
+# (it proxies /api and /openapi.json to http://localhost:8000 — see vite.config.ts).
+services:
+  backend:
+    environment:
+      APP_ENV: dev
+      DEBUG: "true"
+      LOG_LEVEL: DEBUG
+      SEED_ON_STARTUP: "true"
+    volumes:
+      - ./backend/app:/app/app
+      - storage:/data
+    command:
+      - python
+      - -m
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+
+  # Lightweight DB inspector on 127.0.0.1:8081 (dev only).
+  adminer:
+    image: adminer:4
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8081}:8080"

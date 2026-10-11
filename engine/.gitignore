@@ -1,0 +1,36 @@
+# Python build / cache artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+src/*.egg-info/
+.eggs/
+build/
+dist/
+.installed.cfg
+
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Generated rasters / outputs (never commit)
+*.tif
+*.tiff
+out/
+results/
+
+# Generated ENVI test fixtures (synthetic.py writes these at test time)
+tests/data/*.img
+tests/data/*.hdr
+tests/data/*.dat
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS cruft
+.DS_Store

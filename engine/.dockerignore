@@ -1,0 +1,44 @@
+# MarsGIS engine build context — keep it tight; enforce "no bulk/sample archive".
+.git
+.gitignore
+.dockerignore
+Dockerfile
+Makefile
+CHANGELOG.md
+# NOTE: README.md is intentionally NOT ignored — pyproject.toml references it
+# (readme = "README.md") and the Dockerfile COPYs it for the package build.
+
+# Python caches / build output
+**/__pycache__/
+**/*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Tests + notebooks (not needed in the runtime image)
+tests/
+docs/
+*.ipynb
+
+# Bulk / sample data must never enter the image (bundled MICA .tab lives under
+# src/marsgis_engine/data and ships as package data; sample_data is excluded).
+sample_data/
+data/
+downloads/
+outputs/
+*.img
+*.IMG
+*.hdr
+*.qub
+*.cub
+*.tif
+*.tiff
+*.TIF

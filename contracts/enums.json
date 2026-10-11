@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MarsGIS canonical enumerations and shared defaults",
+  "description": "Single source of truth for every closed vocabulary + cross-cutting default shared by frontend (TS), backend (Pydantic) and engine. frontend/src/types/enums.ts and backend/app/schemas/enums.py MUST mirror this file verbatim.",
+  "contract_version": "1.0.0",
+  "enums": {
+    "InstrumentType": ["CRISM", "CTX", "HiRISE", "HRSC", "OMEGA", "THEMIS", "MOLA"],
+    "ProductType": ["MTRDR", "TRDR", "DDR", "MOSAIC", "DEM", "ORTHOIMAGE", "BASEMAP"],
+    "AnalysisAlgorithm": ["SAM", "SID", "BAND_RATIO"],
+    "JobStatus": ["queued", "running", "succeeded", "failed"],
+    "LayerType": ["basemap", "wmts", "xyz", "result_tiles", "geojson_overlay"],
+    "TilingScheme": ["geographic", "mercator"],
+    "TileOrder": ["zyx", "zxy"],
+    "MineralClass": ["carbonate", "olivine", "phyllosilicate", "pyroxene", "sulfate", "iron_oxide", "hydrated_silica", "other"],
+    "AvailabilityStatus": ["verified", "unconfirmed", "unavailable"],
+    "AssetRole": ["primary_metric", "sam_angle", "detection_mask", "match_score"],
+    "LegendType": ["continuous", "categorical"],
+    "SpectrumType": ["reflectance", "continuum_removed"],
+    "HealthStatus": ["ok", "degraded", "down"],
+    "ProvenanceStepStatus": ["succeeded", "failed"],
+    "DatasetKind": ["observation_collection", "mosaic", "dem", "basemap", "reference_library"],
+    "ServiceType": ["WMTS", "WMS", "XYZ", "REST", "STAC", "LOCAL"]
+  },
+  "implemented_algorithms_v1": ["SAM"],
+  "job_status_transitions": {
+    "queued": ["running", "failed"],
+    "running": ["succeeded", "failed"],
+    "succeeded": [],
+    "failed": []
+  },
+  "defaults": {
+    "sam": {
+      "threshold_rad": 0.1,
+      "continuum_removed": false,
+      "wavelength_subset_nm": [1000.0, 2600.0]
+    },
+    "tiles": {
+      "tiling_scheme": "geographic",
+      "tile_size": 256,
+      "level_zero_tiles_x": 2,
+      "level_zero_tiles_y": 1,
+      "min_zoom": 0,
+      "max_zoom": 8,
+      "nodata_rgba": [0, 0, 0, 0]
+    },
+    "colormaps": {"sam_angle": "magma_r", "match_score": "viridis"},
+    "pagination": {"limit": 50, "max_limit": 200}
+  },
+  "crs": {
+    "id": "IAU_2000:49900",
+    "name": "Mars 2000 geographic, planetocentric latitude, east-positive longitude",
+    "ellipsoid_radii_m": [3396190.0, 3396190.0, 3376200.0],
+    "lon_range": [-180.0, 180.0],
+    "lat_range": [-90.0, 90.0],
+    "note": "GeoJSON/bbox coordinates are Mars degrees, NOT Earth WGS84. Cesium must be configured with a Mars ellipsoid."
+  },
+  "caveats": {
+    "candidate_match": "Candidate spectral match (SAM angle below threshold). NOT a confirmed mineral deposit; requires expert review and corroborating observations before any geologic claim."
+  }
+}
