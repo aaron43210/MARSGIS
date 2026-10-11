@@ -198,6 +198,20 @@ async def get_observation_row(session: AsyncSession, obs_id: str) -> Observation
     return (await session.execute(stmt)).scalars().first()
 
 
+async def upsert_observations(session: AsyncSession, rows: list[Observation]) -> int:
+    """Insert discovered observations by id, skipping ids that already exist.
+
+    Insert-only so a re-discovery is idempotent and never clobbers the richer
+    seeded Nili Fossae scenes. Returns the number of newly added rows.
+    """
+    added = 0
+    for row in rows:
+        if await session.get(Observation, row.id) is None:
+            session.add(row)
+            added += 1
+    return added
+
+
 async def list_minerals(
     session: AsyncSession,
     *,

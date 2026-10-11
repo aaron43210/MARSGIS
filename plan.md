@@ -1,107 +1,107 @@
-# MarsGIS — Project Plan
+# MarsGIS — Project Development Plan (updated)
 
-An interactive planetary geospatial-intelligence platform for Mars surface exploration and hyperspectral mineral mapping, with a reproducible analysis engine shipped as a public Docker image.
+**An open-source, self-hostable Mars mapping and mineral-analysis platform.**
 
-**Primary product:** an interactive Mars map/dashboard with searchable observations, selectable layers, feature inspection, and downloadable geospatial results.
-**Research contribution:** evaluate spectral-similarity methods (SAM first) for identifying candidate mineral signatures in CRISM data, related to Martian geological context.
-**Open-science contribution:** a versioned Docker image, source code, example workflows, and reproducible mineral-mapping outputs.
+MarsGIS is a browser-based planetary GIS where you explore Mars in 3D, **discover real Mars observations from public archives**, run a documented hyperspectral mineral-matching workflow on CRISM data, and visualize, download, and **reproduce** the result. It ships as a Docker image so anyone can run their own instance.
 
-## Research question
+Design principle: **keep the system simple and scientifically honest.** NASA's MMGIS, JMARS, and PlanetServer already provide planetary globes and some analysis; MarsGIS's contribution is *not* another globe but a **simple, reproducible workflow for discovering Mars data and running a mineral analysis directly from the map** — with provenance and a public, rerunnable Docker release.
 
-> How effectively can spectral-similarity methods identify **candidate** mineral signatures in selected CRISM observations, and how can the results be made reproducible and accessible through an interactive planetary GIS?
+## Core user experience
+A researcher interested in carbonates near Nili Fossae opens MarsGIS, navigates there, **discovers a real CRISM observation from the live archive**, inspects its coverage/bands, picks a reference spectrum, runs Spectral Angle Mapper, sees a map of **candidate** matches (never "confirmed deposits"), inspects pixel spectra, and downloads the GeoTIFF + provenance to reproduce it.
 
-Objectives: (1) a map-led discovery/visualization system; (2) a CRISM-compatible hyperspectral workflow; (3) candidate-vs-reference spectral comparison; (4) evaluation against existing products/published interpretations; (5) packaged reproduction; (6) an interface that makes results, provenance, and **uncertainty** understandable. A high classification score is **not** a precondition for success — honest uncertainty is a legitimate finding.
+## Who it serves
+| Audience | What they get |
+|---|---|
+| **Researchers** | Discover real CRISM/Mars products anywhere on the planet; run a validated SAM workflow; inspect spectra, quality masks, and spectral-angle values; download GeoTIFF + JSON provenance; reproduce via the pinned Docker engine. Honest "candidate, not confirmed" framing throughout. |
+| **Developers** | A small, documented, self-hostable stack (React + FastAPI + a standalone engine), a frozen API contract + OpenAPI, tests, and `docker compose up`. The engine is importable, a CLI, and a public image — extend or embed it. |
+| **Public** | Explore Mars in 3D on real NASA imagery + MOLA elevation read-out, browse what's been observed, and view published candidate-mineral maps with plain-language caveats — no install, no login. |
 
-## Scope: three levels of coverage
+## The scope change you asked for: Nili Fossae → all of Mars
+Today the catalogue is **seeded with 6 real Nili Fossae CRISM scenes** (offline, so the demo always works). The plan's central upgrade is **live, whole-Mars discovery**: query NASA's archives on demand so the catalogue can surface CRISM (and other) products **anywhere on Mars**, by region or map viewport, while still downloading heavy data **only on demand** (never the whole archive).
 
-| Level | What the map shows | Why |
+- **Discovery, not bulk download.** The backend queries the **PDS Orbital Data Explorer (ODE) REST API** (`oderest.rsl.wustl.edu`) for product IDs, dates, footprints, and metadata, by bounding box / target / instrument. Results merge into the local catalogue (SQLite dev / PostGIS prod).
+- **Download on demand.** Only when a user runs an analysis is the selected product's data fetched to local storage; the global basemap and MOLA DEM are already streamed live (Trek WMTS; MOLA via `/vsicurl` range reads).
+- **Honest cadence.** CRISM targeted observations ended in 2018, so MarsGIS surfaces *newly released / newly indexed* products — it does not promise new live Mars observations.
+
+## Prior art — evaluate before reinventing
+MarsGIS deliberately reuses NASA/USGS infrastructure and only builds the thin, novel workflow layer:
+
+| Resource | What it already offers | How MarsGIS relates |
 |---|---|---|
-| Global | Mars basemaps, elevation, geology, place names, observation footprints | Useful immediately |
-| Regional | CRISM observations + context imagery for **Nili Fossae** | Detailed exploration |
-| Observation | One hyperspectral cube, SAM analysis, mineral output layers | Scientific processing |
+| **NASA Mars Trek (WMTS)** | Mars basemaps + elevation tiles | **Reused directly** as the basemaps (Viking color, MOLA shaded relief) and MOLA DEM. |
+| **NASA-AMMOS MMGIS** | Configurable planetary web GIS + Docker | Evaluated as a base. We ship a small custom Cesium viewer because MarsGIS's value is the discovery→SAM→reproduce workflow, not the globe; the comparison is a documented deliverable (Phase 0/8). |
+| **JMARS / PlanetServer** | Desktop planetary GIS / web CRISM analysis | Studied for workflow gaps; MarsGIS targets a *reproducible, Docker-packaged* one-click workflow. |
+| **PDS ODE + CRISM MTRDR/MICA** | The actual data + reference spectra | **The data foundation** — discovered live and fetched on demand. |
 
-First experiment: one CRISM MTRDR scene over Nili Fossae (`frt00003e12`), SAM against a MICA **carbonate** reference, then expand to olivine and clay/phyllosilicate.
+## Architecture — keep it small
+One Python app (API + processing) behind a React/Cesium frontend; split a worker out only when long jobs demand it.
 
-## Build strategy — map first, science integrated incrementally
+```
+Researcher ─▶ React + CesiumJS (3D Mars globe, catalogue, analysis, results)
+                     │  REST /api/*            │  result tiles (.png)
+                     ▼                         ▼
+             FastAPI (catalogue · discovery · jobs · tiler · elevation)
+                 │                    │
+      Data catalogue (SQLite│PostGIS) │  Science engine (NumPy/rasterio SAM)
+                 │                    │
+   NASA/PDS archives (ODE, Trek, MOLA, MICA)   ▼
+   discovered live, fetched on demand    GeoTIFF (COG) + JSON provenance ─▶ map overlay
+```
 
-| Phase | Goal | Deliverable |
-|---|---|---|
-| 1 | Build the global Mars map (Cesium, Mars ellipsoid, verified Trek basemaps, nav, layer manager, feature search) | Working Mars GIS shell |
-| 2 | Make the map data-aware (observation catalogue table, CRISM footprints, click-to-inspect, filters) | Users select a real CRISM observation from the map |
-| 3 | Geology + terrain context (USGS SIM 3292, elevation/shaded relief, optional THEMIS/CTX) | Layered GIS with geological context |
-| 4 | Analysis workspace (choose observation + mineral + method + threshold → submit → monitor) | Functional analysis form wired to the map |
-| 5 | First real pipeline (MTRDR read → bands/masks → MICA reference → SAM → angle + candidate rasters → provenance) | A real candidate mineral map from a real run |
-| 6 | Package the engine in Docker (CLI, tests, provenance) and publish to GHCR | Public, versioned reproducible image |
-| 7 | Results, export & inspection (legends, pixel/spectrum inspector, quality layers, GeoTIFF + report download, provenance links) | An inspectable, reproducible scientific result |
-| 8 | Expand & publish (more observations, olivine/clay, method comparison, Zenodo) | Reusable open-source platform |
+**Stack (unchanged, already built):** React + TypeScript + Vite + CesiumJS · Python 3.12 + FastAPI · NumPy/Rasterio/Spectral SAM engine · SQLite (dev) → PostgreSQL/PostGIS (prod) · Docker. Go/GeoServer/GeoNode/Redis/Kubernetes are **not** used until a documented need appears.
 
-The 4 user-facing screens are **workspace modes** over one persistent globe canvas: Global explorer → Observation explorer → Analysis workspace → Results.
+## Data-refresh / discovery system
+Separate *discovering products* from *processing them*. Refresh strategy per item:
 
-## Indicative 16-week schedule
+| Information | Strategy |
+|---|---|
+| Product catalogue | Manual `refresh` command first → scheduled ODE queries once reliable |
+| Observation metadata / footprints | Refresh when a product is new or changed (upsert by id, idempotent) |
+| CRISM source cubes | **Download on demand** at analysis time |
+| Mineral reference library | Versioned, updated deliberately |
+| Processed mineral maps | Generated on demand, cached |
+| Basemaps / MOLA DEM | Streamed live from Trek / `/vsicurl`; no copy stored |
 
-| Weeks | Focus | Milestone |
-|---|---|---|
-| 1–2 | Data verification, map prototype | Global Mars map |
-| 3–4 | Basemap, catalogue, footprints | Data-aware GIS |
-| 5–6 | Geology + observation selection | Regional explorer |
-| 7–8 | Analysis workspace + CRISM ingestion | Functional analysis workflow |
-| 9–10 | SAM + first output raster | First candidate mineral map |
-| 11 | Scientific comparison + evaluation | Evaluation report |
-| 12 | Docker packaging + reproducibility | Public engine release |
-| 13–14 | Results panel, downloads, metadata, styling | Complete user workflow |
-| 15 | Integration tests, docs, deployment | Release candidate |
-| 16 | Thesis + demonstration | Final capstone |
+## Current status (honest)
+Already built and verified end-to-end (engine 63 tests, backend 29 tests, frontend typecheck/lint/test/build, a live job producing a localized candidate map, `docker compose config`):
+- ✅ Interactive 3D Mars globe on **real** Trek imagery, Mars ellipsoid + geographic tiling, MOLA **elevation read-out** at the cursor.
+- ✅ CRISM catalogue (6 real Nili Fossae scenes) with clickable footprints + metadata inspection.
+- ✅ Validated **SAM** engine (standalone package + CLI + importable) producing angle + candidate COGs, provenance, report.
+- ✅ Results overlay + legend + opacity + stats + **GeoTIFF (COG) downloads** + provenance; pixel/spectrum inspector; "candidate, not confirmed" enforced structurally.
+- ✅ Docker engine image + `docker compose` stack; SQLite-default / PostGIS-prod; frozen API contract + OpenAPI.
 
-If time is tight, reduce mineral classes and secondary datasets — **never** drop validation.
+**The main open item (this update): live whole-Mars discovery (Phase 4 below).** Secondary: more reference minerals, 3D terrain relief, and the prior-art comparison write-up.
+
+## Roadmap
+| Phase | Deliverable | Done when | Status |
+|---|---|---|---|
+| 0 Feasibility | Compare MMGIS / Trek / JMARS / PlanetServer | Documented what to reuse vs build | 🔜 write-up pending (decisions already made) |
+| 1 Map | 3D Mars globe, real imagery, nav | Globe + Trek layers aligned on Mars CRS | ✅ |
+| 2 Layers | Terrain, elevation, footprints | Layers co-register; MOLA elevation read-out | ✅ |
+| 3 Catalogue | Search + inspect CRISM observations | Metadata/footprints traceable to source | ✅ (seeded) |
+| 4 **Data refresh** | **Discover newly available products across all of Mars** | Live ODE queries by bbox/region; idempotent merge; no dupes; provenance kept | 🔜 **next** |
+| 5 Analysis | SAM on a validated observation | Output matches an independent reference impl | ✅ |
+| 6 Results | Display + export mineral-match maps | GeoTIFF + metadata + provenance downloadable | ✅ |
+| 7 Docker | Reproducible deployment | Clean env launches via documented steps | ✅ (compose + engine image) |
+| 8 Evaluation | Compare vs existing tools / science | Strengths, limits, gaps documented | 🔜 |
+
+## Docker image milestones
+`0.1.0` map + search UI (external basemap) → `0.2.0` catalogue + metadata → `0.3.0` SAM processing + overlays → `1.0.0` documented deploy, pinned deps, persistent outputs, reproducibility tests, tested release. **Current build already spans 0.3→1.0 features**; the version is pinned from git tags. The image never bundles large CRISM cubes — users fetch products on demand; generated outputs persist outside the container.
+
+## Deliberately left out (until a documented need)
+GeoServer/GeoNode · Redis/distributed queue · Kubernetes · extra languages for appearance · a general-purpose multi-agent AI *in the product* · automatic mineral identification without validation · promises of real-time Mars observations.
 
 ## Deliverables
+1. **Open-source repo** — code, frozen contract + OpenAPI, tests, docs, data-source citations.
+2. **Public Docker image** `ghcr.io/<owner>/marsgis-engine:<semver>` — reproduces one documented analysis on a user's own data.
+3. **Hosted Web GIS + a live, whole-Mars discovery catalogue** + validated candidate-mineral maps with provenance and downloads; outputs archivable to Zenodo.
 
-- **A.** Open-source repo (code, contract, tests, docs, example configs).
-- **B.** Public Docker image `ghcr.io/<owner>/marsgis-engine:<semver>` with a tested example + documented I/O.
-- **C.** Hosted Web GIS + validated regional mineral maps with provenance and downloads; research outputs archived to Zenodo.
+## How we judge success
+The end-to-end demo: a researcher **discovers a real CRISM product anywhere on Mars**, selects it from the map, runs SAM, inspects the candidate layer, and **reproduces** it from the public Docker release — then we document which steps MarsGIS makes easier than JMARS/MMGIS/PlanetServer, what it lacks, and whether outputs are scientifically defensible.
 
-## Version 1 acceptance checklist
+## Key risks
+Mars-vs-Earth CRS/terrain mismatch (handled: Mars ellipsoid + geographic TMS + on-body transforms) · large cubes (fetch on demand, windowed processing) · ODE query/footprint variance (validate per product type, upsert idempotently) · over-claiming (candidate-only, enforced) · scope creep (ship discovery + one validated workflow before anything else).
 
-- [ ] Runs out-of-the-box with no extra infra: `cp .env.example .env && make up` (or `uvicorn` + `npm run dev`) → a working map on SQLite + in-process worker + in-process engine, seeded with verified Nili Fossae data.
-- [ ] Primary product is the map: one persistent CesiumJS Mars globe with the **verified** Viking + MOLA-ClrShade Trek basemaps rendering.
-- [ ] CRISM MTRDR footprints over Nili Fossae draw as clickable polygons from `GET /api/observations`.
-- [ ] End-to-end SAM experiment: pick observation + MICA carbonate → `POST /api/analysis-jobs` → poll → `succeeded` → result with angle COG + candidate mask COG + stats + legend + provenance.
-- [ ] Result overlays register pixel-for-pixel via `GET /api/results/{id}/tiles/{z}/{x}/{y}.png` over the custom Mars **geographic** TMS; `/preview.png` fallback works.
-- [ ] Pixel inspector plots reflectance-vs-wavelength against the MICA reference (uPlot) with the spectral angle shown.
-- [ ] Scientific honesty enforced: the candidate-match caveat is a required field on result/stats/legend/provenance and visibly rendered; the continuous angle raster is always retained; nothing is labelled a confirmed deposit.
-- [ ] Contract is single-source and drift-proof: schemas → `contracts/openapi.yaml` generated; TS mirror is `tsc --strict` clean; backend `/openapi.json` equals the committed spec (CI-checked).
-- [ ] Data fetched via APIs/services only (ODE, PDS, MICA, USGS pygeoapi, Trek) — no bulk archive in the repo; only tiny synthetic/sample fixtures committed; pipeline + all tests run fully offline.
-- [ ] Coordinates consistent: Mars IAU 2000 degrees, east-positive lon `[-180,180]`, planetocentric lat `[-90,90]`.
-- [ ] Production path by config only: `DATABASE_URL`→PostGIS, `JOB_BACKEND=arq`, `ENGINE_MODE=container` — no code change.
-- [ ] Standalone engine artifact: `marsgis-engine` CLI + Python API + GHCR image, versioned from git tag.
-- [ ] Quality gates green: frontend lint+typecheck+vitest+build; backend+engine ruff+pytest; docker-build smoke; all offline in CI.
-- [ ] Security posture explicit: dev binds 127.0.0.1; unauthenticated job submission hard-bounded (enum method, AOI/count caps, per-client quota, per-job timeout + rlimits); `REQUIRE_API_KEY` gate available and flagged mandatory for public hosting.
-
-## Verification plan (how we prove it)
-
-Run after the build (see [`connections.md`](connections.md) for exact commands). Highlights:
-
-1. **Contract integrity** — `python contracts/gen_openapi.py && openapi-spec-validator contracts/openapi.yaml` (12 paths).
-2. **Engine offline run** — `marsgis-engine run --cube engine/sample_data/sample_crism_nili.img --mineral carbonate --method SAM --threshold 0.1 --out /tmp/sam_out --timestamp placeholder` → COG + provenance + report; `gdalinfo` confirms COG + Mars CRS.
-3. **Engine + backend tests** — `pytest -q` in each (SAM invariants; job lifecycle; tiles return PNG; security limits).
-4. **Backend boots zero-setup** — `uvicorn app.main:app` on default SQLite → `/api/health` ok, `/api/layers` returns verified Trek layers, `/openapi.json` equals the committed spec.
-5. **Live tile fetch** — `curl` the verified Trek Viking tile → `200 image/jpeg` (re-verified this session).
-6. **Frontend** — `npm ci && npm run lint && npm run typecheck && npm run test -- --run && npm run build`.
-7. **Full stack** — `make up` → globe + Trek basemap + Nili Fossae footprints; submit a SAM job, poll to `succeeded`, confirm the result registers on the globe with the candidate caveat shown.
-8. **Production smoke (config only)** — PostGIS + arq+Redis path reaches `succeeded` identically.
-
-## Risks & mitigations
-
-| Risk | Mitigation |
-|---|---|
-| Mars basemap/projection mismatch | Verified Trek endpoints + Mars `Ellipsoid` + `GeographicTilingScheme` before integrating other layers |
-| Large hyperspectral cubes / OOM | Windowed row-block processing, float32, no full-cube materialization; fetch subsets, never the archive |
-| Missing overlapping imagery | Draw coverage footprints; mark optional layers' availability (`verified`/`unconfirmed`) |
-| Invalid/ambiguous spectra | Preserve masks, honor ENVI `bbl`, document preprocessing, show uncertainty (angle raster retained) |
-| Ratioed-MICA vs un-ratioed scene | SAM albedo-invariance + optional continuum removal + diagnostic window; caveat documented in provenance/report |
-| Weak ML ground truth | Start with spectral methods; add supervised ML only when defensible labels + evaluation exist |
-| Excessive scope | Prioritize map, discovery, one real analysis, Docker, result visualization |
-| Public processing cost/abuse | Static outputs first; bounded, isolated, quota'd server-side jobs; `REQUIRE_API_KEY` for public hosting |
-| Misleading mineral claims | "Candidate" labeling enforced structurally; never "confirmed deposit" |
+See [architecture.md](architecture.md) for the system design, [connections.md](connections.md) for wiring, and [MEMORY.md](MEMORY.md) for current state.
 
 

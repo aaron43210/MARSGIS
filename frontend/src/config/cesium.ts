@@ -45,8 +45,12 @@ export function viewerOptions(): Viewer.ConstructorOptions {
     infoBox: false,
     selectionIndicator: false,
     skyAtmosphere: false,
-    requestRenderMode: true,
-    maximumRenderTimeChange: Infinity,
+    // Continuous rendering: requestRenderMode can leave the globe on an empty
+    // (black) first frame when imagery/tiles finish loading asynchronously and
+    // nothing re-triggers a render (mouse-move updates the coordinate read-out
+    // but does not re-render). A single Mars globe renders cheaply, so render
+    // every frame for correctness.
+    requestRenderMode: false,
     terrainProvider: new EllipsoidTerrainProvider(),
   };
 }

@@ -5,14 +5,48 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.db.geo import parse_bbox
+from app.db.session import session_scope
 from app.deps import get_session
 from app.errors import NotFoundError, ValidationErrorApp
 from app.schemas import ObservationListResponse
 from app.schemas.observation import Observation as ObservationDTO
-from app.services import catalog
+from app.services import catalog, ode
 
 router = APIRouter()
+
+
+@router.get("/observations/discover", response_model=None, include_in_schema=False)
+async def discover_observations(
+    bbox: str = Query(..., description="west,south,east,north (Mars degrees)"),
+    limit: int = Query(default=50, ge=1, le=200),
+) -> dict:
+    """Live whole-Mars discovery: query PDS ODE for CRISM MTRDR products in the
+    given bbox, merge new ones into the catalogue (idempotent), and return them.
+    Additive to the frozen contract (not in /openapi.json)."""
+    try:
+        bbox_t = parse_bbox(bbox)
+    except ValueError as exc:
+        raise ValidationErrorApp(str(exc)) from exc
+    if bbox_t is None:
+        raise ValidationErrorApp("bbox is required (west,south,east,north)")
+
+    settings = get_settings()
+    limit = min(limit, settings.discover_max_results)
+    rows = await ode.discover_crism_mtrdr(bbox_t, limit)
+    # Build summaries BEFORE the rows are attached to a session (avoids expiry).
+    items = [catalog.observation_summary(r).model_dump(mode="json") for r in rows]
+    added = 0
+    if rows:
+        async with session_scope() as session:
+            added = await catalog.upsert_observations(session, rows)
+    return {
+        "items": items,
+        "discovered": len(items),
+        "added": added,
+        "source": "PDS Orbital Data Explorer (ODE) — CRISM MTRDR",
+    }
 
 
 @router.get("/observations", response_model=None)

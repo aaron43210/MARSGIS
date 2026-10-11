@@ -1,5 +1,6 @@
 import { Panel } from '@/components/common/Panel';
 import { CatalogFilters } from '@/components/catalog/CatalogFilters';
+import { DiscoverRegions } from '@/components/catalog/DiscoverRegions';
 import { ObservationList } from '@/components/catalog/ObservationList';
 import { ErrorBanner, Spinner } from '@/components/common';
 import { useCatalog } from '@/hooks/useCatalog';
@@ -11,6 +12,7 @@ export function DataCataloguePanel(): React.ReactElement {
   return (
     <Panel title="Data catalogue">
       <CatalogFilters />
+      <DiscoverRegions />
       {status === 'loading' ? <Spinner label="Loading observations" /> : null}
       {status === 'error' && error ? <ErrorBanner message={error} /> : null}
       <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>

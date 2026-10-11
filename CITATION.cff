@@ -3,12 +3,10 @@ title: MarsGIS
 message: "If you use this software, please cite it using these metadata."
 type: software
 authors:
-  - given-names: Student
-    family-names: Researcher
-    affiliation: "MSc capstone (placeholder — update before release)"
-  - given-names: Supervisor
-    family-names: Name
-    affiliation: "Supervisor (placeholder — update before release)"
+  - given-names: AARON R
+    affiliation: "DIGITAL UNIVERSITY KERALA"
+  - given-names: RADHAKRISHNAN T
+    affiliation: "DIGITAL UNIVERSITY KERALA"
 abstract: >-
   MarsGIS is an interactive Mars map/dashboard (a CesiumJS 3D Mars globe) with an
   integrated hyperspectral analysis engine that runs the Spectral Angle Mapper

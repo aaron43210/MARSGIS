@@ -86,6 +86,26 @@ class Settings(BaseSettings):
     tile_size: int = 256
     tile_cache_enabled: bool = False
 
+    # --- Elevation read-out (cursor height from the global MOLA DEM) ---
+    #: Sampled on demand from a remote Cloud-Optimized GeoTIFF via GDAL /vsicurl
+    #: RANGE reads (only the header + the one strip under the point are fetched —
+    #: never the whole file). Public-domain NASA/USGS MOLA 463 m global DEM.
+    elevation_enabled: bool = True
+    mola_dem_url: str = (
+        "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/"
+        "Mars_MGS_MOLA_DEM_mosaic_global_463m.tif"
+    )
+    elevation_http_timeout_s: int = Field(default=8, ge=1)
+
+    # --- Live catalogue discovery (PDS Orbital Data Explorer REST) ---
+    #: Discover real CRISM products anywhere on Mars by viewport/region bbox and
+    #: merge them into the local catalogue. Metadata + footprints only; heavy
+    #: cubes are still fetched on demand at analysis time, never in bulk.
+    ode_enabled: bool = True
+    ode_base_url: str = "https://oderest.rsl.wustl.edu/live2/"
+    ode_timeout_s: int = Field(default=20, ge=1)
+    discover_max_results: int = Field(default=200, ge=1, le=1000)
+
     @field_validator("cors_origins", "api_keys", mode="before")
     @classmethod
     def _split_list(cls, v: object) -> object:
