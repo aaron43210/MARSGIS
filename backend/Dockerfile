@@ -38,7 +38,7 @@ RUN python -m pip install --upgrade pip \
        fi
 # Production worker extras (JOB_BACKEND=arq). Pinned to backend pyproject [prod].
 # If the lockfile already provides them this is a satisfied no-op.
-RUN pip install "arq==0.28.0" "redis==8.1.0"
+RUN pip install "arq==0.28.0" "redis==5.3.1"
 
 # ----------------------------------------------------------------------------
 FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
