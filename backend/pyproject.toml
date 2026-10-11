@@ -35,7 +35,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-prod = ["arq==0.28.0", "redis==8.1.0"]
+prod = ["arq==0.28.0", "redis==5.3.1"]
 dev = [
     "pytest==9.1.1",
     "pytest-asyncio==0.26.0",

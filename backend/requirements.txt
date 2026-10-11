@@ -32,4 +32,4 @@ pyyaml==6.0.2
 
 # Optional production extras (JOB_BACKEND=arq): installed via '.[prod]'
 # arq==0.28.0
-# redis==8.1.0
+# redis==5.3.1
