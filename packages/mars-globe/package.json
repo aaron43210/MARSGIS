@@ -1,0 +1,66 @@
+{
+  "name": "mars-globe",
+  "version": "0.1.0",
+  "description": "Drop-in 3D Mars globe for CesiumJS — Mars ellipsoid, NASA Mars Trek basemaps, geographic tiling, no Ion token. NPM package, <mars-globe> Web Component, and CesiumJS plugin.",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./standalone": "./dist/mars-globe.min.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build:esm": "tsc -p tsconfig.build.json",
+    "build:iife": "node scripts/bundle.mjs",
+    "build": "npm run build:esm && npm run build:iife",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "peerDependencies": {
+    "cesium": ">=1.120.0"
+  },
+  "devDependencies": {
+    "cesium": "1.146.0",
+    "esbuild": "0.24.2",
+    "typescript": "5.9.3"
+  },
+  "keywords": [
+    "mars",
+    "cesium",
+    "cesiumjs",
+    "globe",
+    "planetary",
+    "gis",
+    "nasa",
+    "trek",
+    "mola",
+    "web-component",
+    "3d",
+    "space"
+  ],
+  "author": "AARON R <aronr43210@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aaron43210/MARSGIS.git",
+    "directory": "packages/mars-globe"
+  },
+  "homepage": "https://github.com/aaron43210/MARSGIS/tree/main/packages/mars-globe#readme",
+  "bugs": {
+    "url": "https://github.com/aaron43210/MARSGIS/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -60,6 +60,7 @@ export class FootprintLayer {
   private selectedId: string | null = null;
   private hoveredId: string | null = null;
   private suitable = new Map<string, boolean>();
+  private bboxes = new Map<string, [number, number, number, number]>();
 
   constructor(viewer: Viewer) {
     this.viewer = viewer;
@@ -70,8 +71,10 @@ export class FootprintLayer {
   load(observations: ObservationSummary[]): void {
     this.dataSource.entities.removeAll();
     this.suitable.clear();
+    this.bboxes.clear();
     for (const obs of observations) {
       this.suitable.set(obs.id, obs.analysis_suitable);
+      this.bboxes.set(obs.id, obs.bbox);
       this.dataSource.entities.add(
         new Entity({
           id: obs.id,
@@ -122,11 +125,32 @@ export class FootprintLayer {
     }
   }
 
-  /** Fly the camera to frame one observation's footprint. */
+  /** Fly the camera to frame one observation's footprint WITH context.
+   *
+   * A raw ``viewer.flyTo(entity)`` fits the tiny CRISM footprint edge-to-edge,
+   * zooming far past the global basemap's resolution (a blurry close-up). We
+   * instead frame a padded rectangle around the footprint with a minimum extent,
+   * so the scene stays legible and the footprint reads as a shape in context.
+   */
   flyToObservation(id: string): void {
-    const entity = this.dataSource.entities.getById(id);
-    if (!entity) return;
-    void this.viewer.flyTo(entity, { duration: 1.2 }).then(() => this.viewer.scene.requestRender());
+    const bbox = this.bboxes.get(id);
+    if (!bbox) {
+      const entity = this.dataSource.entities.getById(id);
+      if (entity) {
+        void this.viewer.flyTo(entity, { duration: 1.2 }).then(() => this.viewer.scene.requestRender());
+      }
+      return;
+    }
+    const [w, s, e, n] = bbox;
+    const cx = (w + e) / 2;
+    const cy = (s + n) / 2;
+    // View ~4-5x the footprint span, with a floor so pinpoint scenes don't over-zoom.
+    const half = Math.max(e - w, n - s, 0.4) * 2.2;
+    const west = Math.max(-180, cx - half);
+    const east = Math.min(180, cx + half);
+    const south = Math.max(-90, cy - half);
+    const north = Math.min(90, cy + half);
+    this.flyToRectangle(west, south, east, north);
   }
 
   /** Fly to a bbox rectangle (used when no entity exists yet). */

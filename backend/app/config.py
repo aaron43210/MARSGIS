@@ -106,6 +106,14 @@ class Settings(BaseSettings):
     ode_timeout_s: int = Field(default=20, ge=1)
     discover_max_results: int = Field(default=200, ge=1, le=1000)
 
+    # --- Real-cube analysis (ENGINE_CUBE_SOURCE=archive) ---
+    #: When analysing a real observation, stream a bounded AOI subset of its MTRDR
+    #: cube from the PDS archive via GDAL /vsicurl range reads (never the whole
+    #: ~1 GB file) and run SAM on that real subset. Keep small — CRISM cubes are
+    #: band-sequential, so each band is a separate range read (latency-bound).
+    archive_subset_px: int = Field(default=48, ge=8, le=256)
+    archive_http_timeout_s: int = Field(default=60, ge=5)
+
     @field_validator("cors_origins", "api_keys", mode="before")
     @classmethod
     def _split_list(cls, v: object) -> object:

@@ -72,6 +72,7 @@ class _JobInputs:
     mineral_name: str
     mineral_class: str
     obs_source_url: str
+    obs_bbox: tuple[float, float, float, float] | None = None
 
 
 def _utc(value: datetime | None) -> datetime:
@@ -89,17 +90,29 @@ def stage_cube(settings: Settings, inputs: _JobInputs) -> tuple[Path, bool]:
             )
         return cube, True
 
-    # archive mode: use a pre-staged real cube if present; never silently
-    # substitute synthetic data for a real-archive request.
-    staged = settings.storage_path / "cubes" / f"{inputs.observation_id}.img"
+    # archive mode: stream a bounded AOI subset of the real MTRDR cube from the
+    # PDS archive (via /vsicurl range reads — never a bulk download), or reuse a
+    # pre-staged full cube if present. Never silently substitute synthetic data.
+    cubes_dir = settings.storage_path / "cubes"
+    staged = cubes_dir / f"{inputs.observation_id}.img"
     if staged.exists():
         return staged, False
+    if inputs.obs_bbox is None:
+        raise EngineError(
+            "archive cube unavailable",
+            detail=f"No footprint bbox for {inputs.observation_id} to locate its MTRDR cube.",
+        )
+    from app.services.cube_fetch import fetch_subset_cube
+
+    subset = fetch_subset_cube(settings, inputs.observation_id, inputs.obs_bbox, cubes_dir)
+    if subset is not None:
+        return subset, False
     raise EngineError(
-        "archive cube not staged",
+        "could not stream the MTRDR cube from the archive",
         detail=(
-            f"ENGINE_CUBE_SOURCE=archive but no cube at {staged}. Stage the real "
-            f"MTRDR _if cube for {inputs.observation_id} there, or use "
-            "ENGINE_CUBE_SOURCE=sample for the offline synthetic demo."
+            f"ENGINE_CUBE_SOURCE=archive but the PDS cube for {inputs.observation_id} "
+            "could not be resolved/streamed. Use ENGINE_CUBE_SOURCE=sample for the "
+            "offline synthetic demo."
         ),
     )
 
@@ -291,6 +304,7 @@ async def _load_inputs(session, job: AnalysisJobRow) -> _JobInputs:
         mineral_name=mineral.mineral if mineral else job.reference_id,
         mineral_class=mineral.mineral_class if mineral else "other",
         obs_source_url=obs.source_url if obs else "",
+        obs_bbox=(obs.minx, obs.miny, obs.maxx, obs.maxy) if obs else None,
     )
 
 
@@ -344,7 +358,7 @@ async def run_analysis_job(
         result_id = uuid.uuid4().hex
         provenance_id = uuid.uuid4().hex
         out_dir = storage.result_dir(result_id, create=True, settings=settings)
-        cube_path, is_synthetic = stage_cube(settings, inputs)
+        cube_path, is_synthetic = await anyio.to_thread.run_sync(stage_cube, settings, inputs)
 
         request = EngineRequest(
             job_id=job_id,

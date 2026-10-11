@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mars-globe — example</title>
+    <!-- Standard Cesium setup: assets base URL + widgets CSS. -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Widgets/widgets.css"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      mars-globe {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      #bar {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+        font: 14px system-ui, sans-serif;
+        background: #fff;
+        color: #16202e;
+        padding: 6px 8px;
+        border: 1px solid #d0d5dd;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar">
+      Basemap:
+      <select id="bm">
+        <option value="viking">Viking color</option>
+        <option value="mola">MOLA shaded relief</option>
+        <option value="mola-dem">MOLA elevation</option>
+        <option value="themis">THEMIS day IR</option>
+      </select>
+    </div>
+
+    <script>
+      window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/';
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Cesium.js"></script>
+    <!-- Built locally by `npm run build` (dist/ is gitignored). -->
+    <script src="../dist/mars-globe.min.js"></script>
+
+    <mars-globe basemap="viking"></mars-globe>
+    <script>
+      const el = document.querySelector('mars-globe');
+      document.getElementById('bm').addEventListener('change', (e) => {
+        el.setAttribute('basemap', e.target.value);
+      });
+    </script>
+  </body>
+</html>

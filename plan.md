@@ -13,7 +13,7 @@ A researcher interested in carbonates near Nili Fossae opens MarsGIS, navigates 
 | Audience | What they get |
 |---|---|
 | **Researchers** | Discover real CRISM/Mars products anywhere on the planet; run a validated SAM workflow; inspect spectra, quality masks, and spectral-angle values; download GeoTIFF + JSON provenance; reproduce via the pinned Docker engine. Honest "candidate, not confirmed" framing throughout. |
-| **Developers** | A small, documented, self-hostable stack (React + FastAPI + a standalone engine), a frozen API contract + OpenAPI, tests, and `docker compose up`. The engine is importable, a CLI, and a public image — extend or embed it. |
+| **Developers** | A small, documented, self-hostable stack (React + FastAPI + a standalone engine), a frozen API contract + OpenAPI, tests, and `docker compose up`. The engine is importable, a CLI, and a public image — extend or embed it. Plus a drop-in **`mars-globe` JS package** (NPM / Web Component / Cesium plugin) to add a configured 3D Mars globe to any app in a few lines. |
 | **Public** | Explore Mars in 3D on real NASA imagery + MOLA elevation read-out, browse what's been observed, and view published candidate-mineral maps with plain-language caveats — no install, no login. |
 
 ## The scope change you asked for: Nili Fossae → all of Mars
@@ -69,8 +69,10 @@ Already built and verified end-to-end (engine 63 tests, backend 29 tests, fronte
 - ✅ Validated **SAM** engine (standalone package + CLI + importable) producing angle + candidate COGs, provenance, report.
 - ✅ Results overlay + legend + opacity + stats + **GeoTIFF (COG) downloads** + provenance; pixel/spectrum inspector; "candidate, not confirmed" enforced structurally.
 - ✅ Docker engine image + `docker compose` stack; SQLite-default / PostGIS-prod; frozen API contract + OpenAPI.
+- ✅ Live **whole-Mars discovery** via PDS ODE (`/api/observations/discover`) + "Discover across Mars" UI; idempotent merge; download-on-demand.
+- ✅ Real-cube **analysis on demand** (`ENGINE_CUBE_SOURCE=archive`): streams a bounded AOI subset of a real MTRDR cube via GDAL `/vsicurl` range reads (no bulk download) and runs SAM on it.
 
-**The main open item (this update): live whole-Mars discovery (Phase 4 below).** Secondary: more reference minerals, 3D terrain relief, and the prior-art comparison write-up.
+**New target (this update): a reusable `mars-globe` developer package** (see "Reusable developer package" below). Remaining: more reference minerals, 3D terrain relief, and the prior-art/evaluation write-up.
 
 ## Roadmap
 | Phase | Deliverable | Done when | Status |
@@ -79,11 +81,12 @@ Already built and verified end-to-end (engine 63 tests, backend 29 tests, fronte
 | 1 Map | 3D Mars globe, real imagery, nav | Globe + Trek layers aligned on Mars CRS | ✅ |
 | 2 Layers | Terrain, elevation, footprints | Layers co-register; MOLA elevation read-out | ✅ |
 | 3 Catalogue | Search + inspect CRISM observations | Metadata/footprints traceable to source | ✅ (seeded) |
-| 4 **Data refresh** | **Discover newly available products across all of Mars** | Live ODE queries by bbox/region; idempotent merge; no dupes; provenance kept | 🔜 **next** |
-| 5 Analysis | SAM on a validated observation | Output matches an independent reference impl | ✅ |
+| 4 **Data refresh** | **Discover newly available products across all of Mars** | Live ODE queries by bbox/region; idempotent merge; no dupes; provenance kept | ✅ |
+| 5 Analysis | SAM on a validated observation (sample + real-cube on demand) | Output matches an independent reference impl; archive subset streams via /vsicurl | ✅ |
 | 6 Results | Display + export mineral-match maps | GeoTIFF + metadata + provenance downloadable | ✅ |
 | 7 Docker | Reproducible deployment | Clean env launches via documented steps | ✅ (compose + engine image) |
 | 8 Evaluation | Compare vs existing tools / science | Strengths, limits, gaps documented | 🔜 |
+| 9 **Dev package** | Reusable `mars-globe` (NPM + Web Component + Cesium plugin) | `npm i mars-globe` adds a configured 3D Mars globe in ≤3 lines; published to npm + GitHub | 🔜 **next** |
 
 ## Docker image milestones
 `0.1.0` map + search UI (external basemap) → `0.2.0` catalogue + metadata → `0.3.0` SAM processing + overlays → `1.0.0` documented deploy, pinned deps, persistent outputs, reproducibility tests, tested release. **Current build already spans 0.3→1.0 features**; the version is pinned from git tags. The image never bundles large CRISM cubes — users fetch products on demand; generated outputs persist outside the container.
@@ -95,6 +98,17 @@ GeoServer/GeoNode · Redis/distributed queue · Kubernetes · extra languages fo
 1. **Open-source repo** — code, frozen contract + OpenAPI, tests, docs, data-source citations.
 2. **Public Docker image** `ghcr.io/<owner>/marsgis-engine:<semver>` — reproduces one documented analysis on a user's own data.
 3. **Hosted Web GIS + a live, whole-Mars discovery catalogue** + validated candidate-mineral maps with provenance and downloads; outputs archivable to Zenodo.
+4. **Reusable `mars-globe` JS package** — the Mars-configured Cesium globe extracted as a framework-agnostic library (NPM package + `<mars-globe>` Web Component + CesiumJS plugin), so any developer can add a 3D Mars globe in a few lines; published to npm + GitHub with a live demo.
+
+## Reusable developer package: `mars-globe`
+Configuring Cesium (or any web‑GIS lib) for Mars is fiddly and poorly documented — override the ellipsoid to **3,396 km × 3,376 km**, strip Earth atmosphere/skybox/geocoder, and wire NASA Mars Trek's geographic tile scheme. Most developers don't know how. **MarsGIS already solved this** (`frontend/src/config/cesium.ts`, `cesium/imageryProviders.ts`, `cesium/LayerManager.ts`, the four verified Trek basemaps), so this deliverable is **extraction, not new work**: lift that core into a standalone library for the broader planetary/space community — rover & mission tracking, crater/volcano databases, education & museum globes, MOLA topography inspection.
+
+One core, three distribution forms:
+- **NPM package** (`mars-globe`): `createMarsGlobe(container, { defaultBasemap: 'viking' | 'mola' })` returns a ready viewer with `.setBasemap(...)`; usable from React / Vue / Svelte / plain JS in ~3 lines.
+- **Web Component** (`<mars-globe basemap="viking">`): a `<script>` tag + one element — drops into any HTML page, blog, or WordPress with no Cesium knowledge.
+- **CesiumJS plugin** (`setupMarsGlobe(viewer, { basemap })`): for developers who already have a Cesium `Viewer` and just want it turned into Mars.
+
+Packaging notes: Cesium is a **peer dependency** (not bundled, avoids version clashes); the package ships the Mars config + Trek basemap presets + a thin globe factory + TypeScript types. Basemaps stream from NASA Mars Trek (attribution bundled); **no Cesium Ion token required**. MIT‑licensed. A Docker image serves non‑developers; this package serves developers — the two distribution tracks are complementary.
 
 ## How we judge success
 The end-to-end demo: a researcher **discovers a real CRISM product anywhere on Mars**, selects it from the map, runs SAM, inspects the candidate layer, and **reproduces** it from the public Docker release — then we document which steps MarsGIS makes easier than JMARS/MMGIS/PlanetServer, what it lacks, and whether outputs are scientifically defensible.

@@ -55,6 +55,8 @@ frontend/public/cesium/
 # OS / editor
 .DS_Store
 Thumbs.db
+# Office lock/temp files (e.g. ~$Document.docx while open in Word)
+~$*
 .idea/
 .vscode/*
 !.vscode/extensions.json
