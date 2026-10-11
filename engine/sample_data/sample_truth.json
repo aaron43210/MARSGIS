@@ -1,0 +1,27 @@
+{
+  "wavelength_units": "micrometers",
+  "n_bands": 60,
+  "carbonate_region": {
+    "line": [
+      7,
+      19
+    ],
+    "sample": [
+      7,
+      19
+    ]
+  },
+  "olivine_region": {
+    "line": [
+      28,
+      40
+    ],
+    "sample": [
+      28,
+      40
+    ]
+  },
+  "background": "everywhere else",
+  "data_ignore_value": 65535.0,
+  "note": "SYNTHETIC scene for offline pipeline/CI only \u2014 NOT real CRISM data. The carbonate/olivine regions are shaped from the bundled real MICA type spectra so SAM against the matching MICA reference localises to them; any match here is still a demo, never a real detection."
+}

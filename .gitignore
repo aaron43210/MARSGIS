@@ -1,0 +1,66 @@
+# ---- MarsGIS .gitignore ----
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+.venv*/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+.eslintcache
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Data: never commit large rasters / archives (bundle only tiny samples explicitly)
+*.img
+*.IMG
+*.qub
+*.tif
+*.tiff
+*.TIF
+*.hdf
+*.h5
+data/
+downloads/
+outputs/
+storage/
+*.sqlite
+*.sqlite3
+*.db
+# allow tiny committed samples / test fixtures
+!engine/sample_data/**
+!**/tests/fixtures/**
+
+# Cesium build assets copied at build time
+frontend/public/cesium/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Docker / local
+*.log
+.pgdata/
+pg_data/
+redis_data/

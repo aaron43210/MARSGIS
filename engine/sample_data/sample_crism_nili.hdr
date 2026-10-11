@@ -1,0 +1,77 @@
+ENVI
+description = {
+  SYNTHETIC CRISM-like cube for MarsGIS offline tests. Not real data.}
+samples = 48
+lines   = 48
+bands   = 60
+header offset = 0
+file type = ENVI Standard
+data type = 4
+interleave = bsq
+sensor type = Unknown
+byte order = 0
+data ignore value = 6.55350000e+04
+wavelength units = Micrometers
+map info = {Equirectangular, 1.0, 1.0, 4445550.0, 1345520.0, 1800.0, 1800.0, Mars_2000, units=Meters}
+coordinate system string = {PROJCS["Mars_2000_Equidistant_Cylindrical",GEOGCS["Mars_2000",DATUM["D_Mars_2000",SPHEROID["Mars_2000_IAU_IAG",3396190.0,0.0]],PRIMEM["Reference_Meridian",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Equirectangular"],PARAMETER["standard_parallel_1",0.0],PARAMETER["central_meridian",0.0],PARAMETER["false_easting",0.0],PARAMETER["false_northing",0.0],UNIT["Meter",1.0]]}
+wavelength = {
+ 1.000000,
+ 1.027119,
+ 1.054237,
+ 1.081356,
+ 1.108475,
+ 1.135593,
+ 1.162712,
+ 1.189831,
+ 1.216949,
+ 1.244068,
+ 1.271186,
+ 1.298305,
+ 1.325424,
+ 1.352542,
+ 1.379661,
+ 1.406780,
+ 1.433898,
+ 1.461017,
+ 1.488136,
+ 1.515254,
+ 1.542373,
+ 1.569492,
+ 1.596610,
+ 1.623729,
+ 1.650847,
+ 1.677966,
+ 1.705085,
+ 1.732203,
+ 1.759322,
+ 1.786441,
+ 1.813559,
+ 1.840678,
+ 1.867797,
+ 1.894915,
+ 1.922034,
+ 1.949153,
+ 1.976271,
+ 2.003390,
+ 2.030508,
+ 2.057627,
+ 2.084746,
+ 2.111864,
+ 2.138983,
+ 2.166102,
+ 2.193220,
+ 2.220339,
+ 2.247458,
+ 2.274576,
+ 2.301695,
+ 2.328814,
+ 2.355932,
+ 2.383051,
+ 2.410169,
+ 2.437288,
+ 2.464407,
+ 2.491525,
+ 2.518644,
+ 2.545763,
+ 2.572881,
+ 2.600000}

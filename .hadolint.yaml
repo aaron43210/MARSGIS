@@ -1,0 +1,18 @@
+# hadolint — Dockerfile linter config (https://github.com/hadolint/hadolint)
+failure-threshold: warning
+
+trustedRegistries:
+  - ghcr.io
+  - docker.io
+
+ignored:
+  # Pinning every apt package version is impractical for build-essential on a
+  # rolling slim base; we isolate apt to the discarded builder stage and clean
+  # apt lists, so the runtime image carries none of it.
+  - DL3008
+  # pip packages are pinned via requirements.txt / requirements.lock.txt rather
+  # than inline `pip install pkg==x` in the Dockerfile.
+  - DL3013
+  # The multi-stage venv-copy pattern intentionally keeps a single clean runtime
+  # layer; `WORKDIR` + venv on PATH is deliberate.
+  - DL3042

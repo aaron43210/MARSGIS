@@ -1,0 +1,78 @@
+{
+  "_comment": "Seed catalogue of CRISM MTRDR observations over Nili Fossae, discovered via the PDS Orbital Data Explorer (ODE) REST API on 2026-10-11. Owned by the data-access concern. Used to pre-populate the backend DB so the UI shows footprints offline; the backend can refresh/extend this live via the ODE query documented in data_sources.json.",
+  "region": {"name": "Nili Fossae", "bbox_lonlat": [74, 20, 78, 24]},
+  "ode_query_used": "https://oderest.rsl.wustl.edu/live2/?query=product&results=m&output=JSON&target=mars&ihid=MRO&iid=CRISM&pt=MTRDR&westernlon=74&easternlon=78&minlat=20&maxlat=24",
+  "ode_total_count_in_bbox": 23,
+  "archive_host": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/",
+  "primary_experiment_observation": "frt00003e12",
+  "observations": [
+    {
+      "observation_id": "frt00003e12",
+      "observation_type": "FRT",
+      "if_cube_product": "frt00003e12_07_if166j_mtr3.img",
+      "dir_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_013/frt00003e12/",
+      "center": [77.0712, 22.2605],
+      "bbox_lonlat": [76.9404, 22.1347, 77.2127, 22.3863],
+      "utc_start": "2007-01-13T00:13:51Z",
+      "target_comment": "Nili Fossae Olivine Hydrated Region 2",
+      "verified": true,
+      "note": "PRIMARY experiment scene: olivine + hydrated minerals, good carbonate/olivine context."
+    },
+    {
+      "observation_id": "frt00004f75",
+      "observation_type": "FRT",
+      "if_cube_product": "frt00004f75_07_if166j_mtr3.img",
+      "dir_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_083/frt00004f75/",
+      "center": [74.2555, 21.1267],
+      "bbox_lonlat": [74.066, 20.673, 74.444, 21.5804],
+      "utc_start": "2007-03-24T22:01:53Z",
+      "target_comment": "MSL Site f - Nili Fossae",
+      "verified": true
+    },
+    {
+      "observation_id": "frt000064d9",
+      "observation_type": "FRT",
+      "if_cube_product": "frt000064d9_07_if166j_mtr3.img",
+      "dir_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_172/frt000064d9/",
+      "center": [74.2491, 21.1522],
+      "bbox_lonlat": [74.1213, 21.0269, 74.3856, 21.2775],
+      "utc_start": "2007-06-21T06:43:02Z",
+      "target_comment": "",
+      "verified": true
+    },
+    {
+      "observation_id": "frt00007bc8",
+      "observation_type": "FRT",
+      "if_cube_product": "frt00007bc8_07_if166j_mtr3.img",
+      "dir_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_260/frt00007bc8/",
+      "center": [74.2084, 21.3071],
+      "bbox_lonlat": [74.0744, 21.1788, 74.3425, 21.4353],
+      "utc_start": "2007-09-17T15:26:31Z",
+      "target_comment": "MSL landing site target 2",
+      "verified": true
+    },
+    {
+      "observation_id": "frt0000805f",
+      "observation_type": "FRT",
+      "if_cube_product": "frt0000805f_07_if166j_mtr3.img",
+      "dir_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_277/frt0000805f/",
+      "center": [74.7658, 21.7165],
+      "bbox_lonlat": [74.6259, 21.5986, 74.8935, 21.8344],
+      "utc_start": "2007-10-04T02:03:03Z",
+      "target_comment": "MSL Site - Nili Fossae Trough",
+      "verified": true
+    },
+    {
+      "observation_id": "frt00008389",
+      "observation_type": "FRT",
+      "if_cube_product": "frt00008389_07_if166j_mtr3.img",
+      "dir_url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_288/frt00008389/",
+      "center": [75.8097, 23.5369],
+      "bbox_lonlat": [75.6669, 23.4232, 75.9381, 23.6517],
+      "utc_start": "2007-10-15T09:13:45Z",
+      "target_comment": "stratigraphy of phyllosilicate in Nili Fossae",
+      "verified": true,
+      "note": "dir_url day-of-year derived from utc_start; confirm 2007_288 at fetch time via ODE LabelURL."
+    }
+  ]
+}
