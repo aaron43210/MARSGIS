@@ -28,7 +28,7 @@ export interface CameraState {
   roll: number;
 }
 
-export interface PanelState<Tab extends string> {
+interface PanelState<Tab extends string> {
   open: boolean;
   width: number;
   active: Tab;
@@ -105,7 +105,7 @@ export interface CatalogSlice {
   discover: (bbox: BBox, label: string) => Promise<void>;
 }
 
-export interface AnalysisConfig {
+interface AnalysisConfig {
   observation_id: string | null;
   algorithm: 'SAM';
   reference_id: string | null;
@@ -189,12 +189,5 @@ export type AppState = ViewSlice &
   ResultSlice &
   InspectorSlice &
   GazetteerSlice;
-
-/** Camera flyTo target published by the store; GlobeView effect consumes & clears it. */
-export interface FlyTarget {
-  lon: number;
-  lat: number;
-  height: number;
-}
 
 export type { BBox };

@@ -25,7 +25,7 @@ function clampPct(p: number): number {
   return Math.max(0, Math.min(100, p));
 }
 
-export interface Swatch {
+interface Swatch {
   color: string;
   label: string;
 }
@@ -33,15 +33,4 @@ export interface Swatch {
 /** Discrete/categorical swatch rows. */
 export function discreteSwatches(legend: Legend): Swatch[] {
   return legend.stops.map((s) => ({ color: s.color, label: s.label }));
-}
-
-/** Pick a readable text color (black/white) for a given hex background. */
-export function contrastText(hex: string): string {
-  const c = hex.replace('#', '');
-  if (c.length < 6) return '#000';
-  const r = parseInt(c.slice(0, 2), 16);
-  const g = parseInt(c.slice(2, 4), 16);
-  const b = parseInt(c.slice(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.55 ? '#05070b' : '#ffffff';
 }

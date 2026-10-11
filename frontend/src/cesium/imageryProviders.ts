@@ -30,7 +30,7 @@ function rectangleFromBounds(bounds: BBox | null): Rectangle {
 }
 
 /** True when the url_template contains tile tokens (tiled); false = single static image. */
-export function isTiled(layer: MapLayer): boolean {
+function isTiled(layer: MapLayer): boolean {
   return /\{z\}/i.test(layer.source.url_template);
 }
 

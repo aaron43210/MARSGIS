@@ -1,0 +1,37 @@
+{
+  "gate": "A3",
+  "title": "Remote /vsicurl vs. local CRISM MTRDR read",
+  "observation": "frt00003e12",
+  "bbox_lonlat_wsen": [
+    76.9404,
+    22.1347,
+    77.2127,
+    22.3863
+  ],
+  "aoi_px": 48,
+  "status": "ok",
+  "metadata_time_s": 4.967,
+  "resolved_urls": {
+    "hdr": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_013/frt00003e12/frt00003e12_07_if166j_mtr3.hdr",
+    "img": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_013/frt00003e12/frt00003e12_07_if166j_mtr3.img",
+    "wv": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_013/frt00003e12/frt00003e12_07_wv166j_mtr3.tab"
+  },
+  "declared_bands": 489,
+  "remote": {
+    "window_read_time_s": 650.102,
+    "full_cube_shape_bands_lines_samples": [
+      489,
+      828,
+      843
+    ],
+    "aoi_shape_bands_lines_samples": [
+      489,
+      48,
+      48
+    ],
+    "n_http_range_requests": 1419,
+    "bytes_transferred": 110574157,
+    "bytes_transferred_mib": 105.452,
+    "aoi_finite_fraction": 1.0
+  }
+}

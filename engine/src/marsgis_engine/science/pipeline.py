@@ -90,6 +90,53 @@ class SamResult:
     stats: dict[str, Any] = field(default_factory=dict)
 
 
+def _build_alignment(
+    cube: Any,
+    reference: Any,
+    window_mask: np.ndarray,
+    ov_mask: np.ndarray,
+    cand_idx: np.ndarray,
+    final_idx: np.ndarray,
+    wl_final: np.ndarray,
+    params: Any,
+) -> dict[str, Any]:
+    """Per-stage band-drop ledger + the original/resampled wavelength grids.
+
+    The funnel is internally consistent::
+
+        n_bands_selected (window ∩ good)
+          - n_bands_dropped_out_of_reference_coverage
+          - n_bands_dropped_resample_nonfinite
+          = n_bands_used
+
+    so a reader can audit exactly which cube bands reached SAM and why the rest
+    were dropped. The resampled grid (``bands_used_wavelengths_nm``) is recorded
+    in full; the reference's own grid is pinned by its SHA-256 in ``inputs`` and
+    summarised here by coverage so the record stays compact.
+    """
+    ref_wl = np.asarray(reference.wavelengths_nm, dtype=np.float64)
+    n_selected = int(np.count_nonzero(window_mask))
+    n_window_and_coverage = int(cand_idx.size)
+    n_used = int(final_idx.size)
+    return {
+        "resample_method": str(params.resample_method),
+        "cube_window_nm": [float(params.window_nm[0]), float(params.window_nm[1])],
+        "reference_coverage_nm": [
+            float(np.nanmin(ref_wl)) if ref_wl.size else None,
+            float(np.nanmax(ref_wl)) if ref_wl.size else None,
+        ],
+        "n_reference_points": int(reference.point_count),
+        "n_bands_total": int(cube.bands),
+        "n_bands_in_reference_coverage": int(np.count_nonzero(ov_mask)),
+        "n_bands_selected": n_selected,
+        "n_bands_window_and_coverage": n_window_and_coverage,
+        "n_bands_dropped_out_of_reference_coverage": n_selected - n_window_and_coverage,
+        "n_bands_dropped_resample_nonfinite": n_window_and_coverage - n_used,
+        "n_bands_used": n_used,
+        "bands_used_wavelengths_nm": [round(float(w), 3) for w in np.asarray(wl_final).ravel()],
+    }
+
+
 def _native_bounds(cube: Any) -> list[float] | None:
     """(west, south, east, north) in the raster's own CRS units."""
     try:
@@ -192,6 +239,13 @@ def run_sam(cube_path: str, reference_or_mineral: str, params: RunParams) -> Sam
     wl_final = cube.wavelengths_nm[final_idx]
     ref_vec = ref_resampled[valid]
 
+    # Auditable band-alignment ledger: how the cube's bands funnel down to the
+    # set actually fed to SAM. Recorded in provenance so a reader can see which
+    # bands were used and why the others were dropped (A4 honesty requirement).
+    alignment = _build_alignment(
+        cube, reference, window_mask, ov_mask, cand_idx, final_idx, wl_final, params
+    )
+
     if params.continuum_removal:
         ref_used = continuum_removed(ref_vec, wl_final)
     else:
@@ -262,6 +316,7 @@ def run_sam(cube_path: str, reference_or_mineral: str, params: RunParams) -> Sam
         timestamp=params.timestamp,
         output_paths={"angle": angle_path, "candidate": candidate_path},
         engine_image=params.engine_image,
+        alignment=alignment,
     )
     write_provenance(provenance_path, record)
     write_report(report_path, record)

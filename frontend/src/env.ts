@@ -10,8 +10,6 @@ const rawApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 // Normalize: drop a single trailing slash so `${apiUrl}/api/...` never doubles up.
 const apiUrl = rawApiUrl === '/' ? '' : rawApiUrl.replace(/\/$/, '');
 
-export type BasemapPref = string;
-
 export const env = {
   /** Base URL for the backend. '' means same-origin (prod behind nginx). */
   apiUrl,
@@ -24,5 +22,3 @@ export const env = {
   /** Route Trek tiles through the /trek proxy instead of trek.nasa.gov. */
   trekViaProxy: readBool(import.meta.env.VITE_TREK_VIA_PROXY, false),
 } as const;
-
-export type Env = typeof env;

@@ -30,13 +30,13 @@ export function DiscoverRegions(): React.ReactElement {
       className="field"
       style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 6 }}
     >
-      <span style={{ fontWeight: 600 }}>Discover across Mars</span>
+      <span style={{ fontWeight: 600 }}>Fetch new scenes from NASA</span>
       <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-        Query the live NASA PDS archive (ODE) for real CRISM scenes in a region and add them to the
-        catalogue. Metadata + footprints only — cubes download on demand.
+        Downloads real CRISM scene metadata + footprints from the live NASA PDS archive (ODE) for a
+        region and adds them to the catalogue below. Image cubes download later, on demand.
       </span>
       <select
-        aria-label="Discovery region"
+        aria-label="Region to fetch"
         value={idx}
         onChange={(e) => setIdx(Number(e.target.value))}
       >
@@ -47,13 +47,13 @@ export function DiscoverRegions(): React.ReactElement {
         ))}
       </select>
       <Button block disabled={status === 'loading'} onClick={() => void discover(region.bbox, region.label)}>
-        {status === 'loading' ? 'Discovering…' : `Discover CRISM in ${region.label}`}
+        {status === 'loading' ? 'Fetching from NASA…' : `Fetch from NASA: ${region.label}`}
       </Button>
       {status === 'loading' ? <Spinner label="Querying PDS ODE" /> : null}
       {status === 'error' && error ? <ErrorBanner message={error} /> : null}
       {status === 'ready' && last ? (
         <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-          Found {last.found} scene{last.found === 1 ? '' : 's'} in {last.label}.{' '}
+          Fetched {last.found} scene{last.found === 1 ? '' : 's'} in {last.label}.{' '}
           {last.found > 0 ? 'Flew to the first — click any card or footprint.' : 'Try another region.'}
         </span>
       ) : null}

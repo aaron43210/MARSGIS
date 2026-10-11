@@ -126,6 +126,25 @@
         }
       }
     },
-    "disclaimer": {"type": "string"}
+    "disclaimer": {"type": "string"},
+    "preprocessing_caveat": {"type": "string"},
+    "wavelength_alignment": {
+      "type": "object",
+      "description": "Auditable band-drop ledger and the resampled grid actually fed to SAM.",
+      "properties": {
+        "resample_method": {"type": "string"},
+        "cube_window_nm": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+        "reference_coverage_nm": {"type": "array", "items": {"type": ["number", "null"]}, "minItems": 2, "maxItems": 2},
+        "n_reference_points": {"type": "integer"},
+        "n_bands_total": {"type": "integer"},
+        "n_bands_in_reference_coverage": {"type": "integer"},
+        "n_bands_selected": {"type": "integer"},
+        "n_bands_window_and_coverage": {"type": "integer"},
+        "n_bands_dropped_out_of_reference_coverage": {"type": "integer"},
+        "n_bands_dropped_resample_nonfinite": {"type": "integer"},
+        "n_bands_used": {"type": "integer"},
+        "bands_used_wavelengths_nm": {"type": "array", "items": {"type": "number"}}
+      }
+    }
   }
 }

@@ -7,7 +7,6 @@ escapes it (``..``, absolute paths, symlink traversal).
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 from app.config import Settings, get_settings
@@ -42,18 +41,3 @@ def safe_path(result_id: str, name: str, *, settings: Settings | None = None) ->
     if not candidate.is_file():
         raise NotFoundError("asset not found")
     return candidate
-
-
-def store_file(result_id: str, src: Path, name: str, *, settings: Settings | None = None) -> str:
-    """Copy an engine output into the result dir; return the stored basename."""
-    d = result_dir(result_id, create=True, settings=settings)
-    dest = d / name
-    if Path(src).resolve() != dest.resolve():
-        shutil.copyfile(src, dest)
-    return name
-
-
-def cleanup_result(result_id: str, *, settings: Settings | None = None) -> None:
-    d = result_dir(result_id, settings=settings)
-    if d.exists():
-        shutil.rmtree(d, ignore_errors=True)

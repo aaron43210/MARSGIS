@@ -26,8 +26,6 @@ _log = get_logger("fetch")
 
 #: Authoritative, verified-reachable PDS public-domain typespec archive.
 BASE_URL = "https://pds-geosciences.wustl.edu/mro/mro-m-crism-4-typespec-v1/mrocr_8001/data/"
-#: Documented alternative mirror (not always serving these product ids).
-ALT_BASE_URL = "https://crismtypespectra.rsl.wustl.edu/mrocr_8001/data/"
 
 #: Hard cap on a single reference download (these files are ~30 KB).
 MAX_BYTES = 5 * 1024 * 1024

@@ -20,7 +20,7 @@ export class ApiError extends Error {
   }
 }
 
-export interface RequestOptions {
+interface RequestOptions {
   method?: 'GET' | 'POST';
   /** JSON-serializable request body. */
   body?: unknown;
@@ -95,11 +95,6 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
 /** Build an absolute URL for a binary/media resource (tiles, downloads) honoring apiUrl. */
 export function mediaUrl(path: string): string {
   return `${env.apiUrl}${path}`;
-}
-
-/** A fresh AbortController; callers abort the previous when a request supersedes it. */
-export function newAbort(): AbortController {
-  return new AbortController();
 }
 
 export function isAbort(err: unknown): boolean {

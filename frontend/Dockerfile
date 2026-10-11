@@ -11,13 +11,12 @@ ARG NODE_VERSION=24
 
 # ----------------------------------------------------------------------------
 FROM node:${NODE_VERSION}-bookworm-slim AS build
-ENV CI=true \
-    NODE_ENV=production
+ENV CI=true
 WORKDIR /app
 COPY package.json package-lock.json* ./
 # `npm ci` requires a committed lockfile; fall back to `npm install` when the
 # frontend concern has not committed package-lock.json yet.
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install --include=dev; fi
 COPY . .
 ARG VITE_API_URL="/"
 ARG VITE_USE_MOCKS="false"
@@ -36,7 +35,7 @@ FROM nginxinc/nginx-unprivileged:1.27-alpine AS serve
 LABEL org.opencontainers.image.title="marsgis-frontend" \
       org.opencontainers.image.description="MarsGIS React + CesiumJS single-page app served by nginx" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.source="https://github.com/marsgis/marsgis"
+      org.opencontainers.image.source="https://github.com/aaron43210/MARSGIS"
 # nginx-unprivileged runs as a non-root user and listens on 8080 by default.
 # BACKEND_UPSTREAM is substituted into the config at container start via the
 # stock nginx `envsubst`-on-templates mechanism.

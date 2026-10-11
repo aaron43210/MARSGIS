@@ -88,6 +88,19 @@ def render_report(record: dict[str, Any]) -> str:
     add(f"  Resample method    : {par.get('resample_method')}")
     add("")
 
+    wa = record.get("wavelength_alignment")
+    if wa:
+        cov = wa.get("reference_coverage_nm", [None, None])
+        add("-- Wavelength alignment (band funnel) " + "-" * 34)
+        add(f"  Reference coverage : {cov[0]} - {cov[1]} nm ({wa.get('n_reference_points')} pts)")
+        add(f"  Cube bands (total) : {wa.get('n_bands_total')}")
+        add(f"  In diag. window    : {wa.get('n_bands_selected')}  (window + good-band mask)")
+        add(f"  Within ref range   : {wa.get('n_bands_window_and_coverage')}")
+        add(f"  Dropped (coverage) : {wa.get('n_bands_dropped_out_of_reference_coverage')}")
+        add(f"  Dropped (resample) : {wa.get('n_bands_dropped_resample_nonfinite')}")
+        add(f"  Bands used in SAM  : {wa.get('n_bands_used')}  (no extrapolation beyond coverage)")
+        add("")
+
     add("-- Results " + "-" * 61)
     n_pix = res.get("n_pixels", 0)
     n_valid = res.get("n_valid_pixels", 0)

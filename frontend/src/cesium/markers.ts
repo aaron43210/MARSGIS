@@ -43,7 +43,7 @@ export function showFeatureMarker(viewer: Viewer, feature: GazetteerFeature): vo
   viewer.scene.requestRender();
 }
 
-export function removeFeatureMarker(viewer: Viewer): void {
+function removeFeatureMarker(viewer: Viewer): void {
   if (markerEntity) {
     viewer.entities.remove(markerEntity);
     markerEntity = null;
@@ -54,14 +54,6 @@ export function removeFeatureMarker(viewer: Viewer): void {
 export function flyToFeature(viewer: Viewer, feature: GazetteerFeature): void {
   viewer.camera.flyTo({
     destination: Cartesian3.fromDegrees(feature.lon, feature.lat, heightForFeature(feature.diameterKm)),
-    duration: 1.4,
-    complete: () => viewer.scene.requestRender(),
-  });
-}
-
-export function flyToLonLat(viewer: Viewer, lon: number, lat: number, height: number): void {
-  viewer.camera.flyTo({
-    destination: Cartesian3.fromDegrees(lon, lat, height),
     duration: 1.4,
     complete: () => viewer.scene.requestRender(),
   });

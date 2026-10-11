@@ -7,7 +7,7 @@
 import type { MapLayer } from '@/types';
 
 /** Trek EQ WMTS template. The literal double slash is REQUIRED (verified 200). */
-export const TREK_TEMPLATE =
+const TREK_TEMPLATE =
   'https://trek.nasa.gov/tiles/Mars/EQ/{product}/1.0.0//default/default028mm/{z}/{y}/{x}.{ext}';
 
 interface TrekProduct {
@@ -24,7 +24,7 @@ const TREK_PRODUCTS: TrekProduct[] = [
     id: 'viking',
     title: 'Viking Color Mosaic',
     subtitle: 'MDIM 2.1 · 232 m/px',
-    product: 'Viking_MDIM21_ClrMosaic_232m',
+    product: 'Mars_Viking_MDIM21_ClrMosaic_global_232m',
     ext: 'jpg',
     maxZoom: 7,
   },
@@ -32,7 +32,7 @@ const TREK_PRODUCTS: TrekProduct[] = [
     id: 'mola_clrshade',
     title: 'MOLA Color Shaded Relief',
     subtitle: 'MGS MOLA · 463 m/px',
-    product: 'MGS_MOLA_ClrShade_merge_463m',
+    product: 'Mars_MGS_MOLA_ClrShade_merge_global_463m',
     ext: 'jpg',
     maxZoom: 6,
   },

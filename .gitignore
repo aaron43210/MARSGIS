@@ -48,6 +48,12 @@ storage/
 # allow tiny committed samples / test fixtures
 !engine/sample_data/**
 !**/tests/fixtures/**
+# ...but the blanket negation above must NOT re-include bytecode/caches under fixtures
+**/tests/fixtures/**/__pycache__/
+**/tests/fixtures/**/*.py[cod]
+# large real-cube fixture (~1 MB): kept local, regenerate via scripts/make_a2_fixture.py;
+# the A2 / vertical-slice tests skip when it is absent (keeps the repo + CI lean)
+engine/tests/fixtures/real_mtrdr_subset/
 
 # Cesium build assets copied at build time
 frontend/public/cesium/
@@ -66,3 +72,6 @@ Thumbs.db
 .pgdata/
 pg_data/
 redis_data/
+
+# Local validation cube cache (never committed)
+.cache/

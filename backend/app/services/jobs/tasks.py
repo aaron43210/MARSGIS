@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -73,10 +73,6 @@ class _JobInputs:
     mineral_class: str
     obs_source_url: str
     obs_bbox: tuple[float, float, float, float] | None = None
-
-
-def _utc(value: datetime | None) -> datetime:
-    return value or datetime.now(UTC)
 
 
 def stage_cube(settings: Settings, inputs: _JobInputs) -> tuple[Path, bool]:
@@ -383,7 +379,6 @@ async def run_analysis_job(
 
         await update_progress(job_id, 0.9, "rendering result metadata")
         await _persist_result(
-            settings=settings,
             inputs=inputs,
             result_id=result_id,
             provenance_id=provenance_id,
@@ -407,7 +402,6 @@ async def run_analysis_job(
 
 async def _persist_result(
     *,
-    settings: Settings,
     inputs: _JobInputs,
     result_id: str,
     provenance_id: str,

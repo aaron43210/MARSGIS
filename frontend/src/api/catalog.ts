@@ -4,7 +4,7 @@
 import { apiFetch } from './client';
 import { zObservationPage } from './validators';
 import { API_ROUTES } from '@/types';
-import type { Observation, ObservationListResponse, ObservationQuery } from '@/types';
+import type { ObservationListResponse, ObservationQuery } from '@/types';
 
 function serializeBbox(bbox?: ObservationQuery['bbox']): string | undefined {
   if (!bbox) return undefined;
@@ -30,8 +30,4 @@ export async function listObservations(
     signal,
     schema: zObservationPage,
   });
-}
-
-export async function getObservation(id: string, signal?: AbortSignal): Promise<Observation> {
-  return apiFetch<Observation>(API_ROUTES.observation(id), { signal });
 }

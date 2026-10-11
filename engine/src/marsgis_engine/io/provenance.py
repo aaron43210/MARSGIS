@@ -91,6 +91,7 @@ def build_provenance(
     timestamp: str | None = None,
     output_paths: dict[str, Path] | None = None,
     engine_image: str = "",
+    alignment: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble the provenance dict for one SAM run."""
     window = tuple(float(w) for w in params.window_nm)
@@ -159,7 +160,10 @@ def build_provenance(
         "environment": _environment(),
         "outputs": outputs,
         "disclaimer": config.CANDIDATE_DISCLAIMER,
+        "preprocessing_caveat": config.PREPROCESSING_CAVEAT,
     }
+    if alignment is not None:
+        record["wavelength_alignment"] = alignment
     return record
 
 
