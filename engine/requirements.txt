@@ -18,7 +18,7 @@ numpy==2.5.3
 rasterio==1.5.2
 spectral==0.25
 scipy==1.18.1
-affine==2.4.0
+affine==3.0.1
 
 # Key transitive dependencies (rasterio / numpy stack) — pinned for
 # reproducibility; the generated lockfile enumerates the complete closure.
