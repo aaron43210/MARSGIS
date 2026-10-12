@@ -11,12 +11,12 @@ fastapi==0.143.0
 uvicorn[standard]==0.54.0
 sqlmodel==0.0.48
 sqlalchemy[asyncio]==2.1.4
-greenlet==3.2.4  # required by SQLAlchemy's async engine (sqlalchemy[asyncio])
+greenlet==3.5.6  # required by SQLAlchemy's async engine (sqlalchemy[asyncio])
 alembic==1.20.0
 pydantic==2.14.0
 pydantic-settings==2.15.0
-aiosqlite==0.21.0
-asyncpg==0.31.0
+aiosqlite==0.22.1
+asyncpg==0.32.0
 psycopg[binary]==3.3.6
 geoalchemy2==0.20.0
 shapely==2.2.0
@@ -27,8 +27,8 @@ numpy==2.5.4
 httpx==0.28.1
 anyio>=4.6
 structlog==25.4.0
-python-multipart==0.0.20
-pyyaml==6.0.2
+python-multipart==0.0.32
+pyyaml==6.0.3
 
 # Optional production extras (JOB_BACKEND=arq): installed via '.[prod]'
 # arq==0.28.0
