@@ -57,7 +57,7 @@ jobs:
       - name: Ruff format check
         run: ruff format --check backend engine
       - name: Pytest (offline — bundled synthetic sample)
-        run: pytest engine/tests backend/tests -q
+        run: pytest engine/tests backend/tests -q -o asyncio_mode=auto
 
   docker-build:
     runs-on: ubuntu-latest
