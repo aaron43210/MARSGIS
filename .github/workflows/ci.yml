@@ -42,6 +42,7 @@ jobs:
 
   python:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -56,8 +57,10 @@ jobs:
         run: ruff check backend engine
       - name: Ruff format check
         run: ruff format --check backend engine
-      - name: Pytest (offline — bundled synthetic sample)
-        run: pytest engine/tests backend/tests -q -o asyncio_mode=auto
+      - name: Pytest engine
+        run: pytest engine/tests -v
+      - name: Pytest backend
+        run: pytest backend/tests -v -o asyncio_mode=auto
 
   docker-build:
     runs-on: ubuntu-latest
