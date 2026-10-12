@@ -7,7 +7,7 @@ Map-first planetary Web GIS for Mars (**the Cesium map/dashboard is the primary 
 
 ## Non-negotiables
 - Name is **MarsGIS** (never "MarsGeoAI").
-- Git author/committer: **AARON R <aronr43210@gmail.com>** only — no other attribution.
+- Git author/committer: **AARON R <aaronr43210@gmail.com>** only — no other attribution.
 - Fetch data via APIs/services; **no bulk archives committed**; only tiny synthetic/sample fixtures. Pipeline + tests run fully offline.
 - **Scientific honesty is structural:** outputs are *candidate spectral matches*, never confirmed deposits; the caveat is a required field; the continuous angle raster is always retained; synthetic data is never presented as real.
 - Must **actually run** out-of-the-box (SQLite + in-process worker + in-process engine), with a config-only production path.
