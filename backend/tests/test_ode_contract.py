@@ -180,9 +180,7 @@ def _patch_ode(monkeypatch, payload=None, exc=None):
     )
     import httpx
 
-    monkeypatch.setattr(
-        httpx, "AsyncClient", lambda **kw: _FakeClient(payload, exc, **kw)
-    )
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: _FakeClient(payload, exc, **kw))
 
 
 async def test_discover_dedupes_and_respects_limit(monkeypatch):
@@ -209,8 +207,6 @@ async def test_discover_archive_unavailable_returns_empty(monkeypatch):
 
 
 async def test_discover_disabled_returns_empty(monkeypatch):
-    monkeypatch.setattr(
-        ode, "get_settings", lambda: SimpleNamespace(ode_enabled=False)
-    )
+    monkeypatch.setattr(ode, "get_settings", lambda: SimpleNamespace(ode_enabled=False))
     rows = await ode.discover_crism_mtrdr((76.0, 21.0, 78.0, 23.0), limit=10)
     assert rows == []

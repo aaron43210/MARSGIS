@@ -1,0 +1,55 @@
+MarsGIS engine — bundled MICA type-spectra reference data
+==========================================================
+
+STATUS: REAL DATA (not synthetic).
+
+The .tab files in this directory are genuine CRISM MICA (Mineral Identification
+and Characterization) type spectra retrieved from the NASA Planetary Data
+System (PDS). They are U.S. Government public-domain data and are redistributed
+here unmodified as the production SAM reference library for the Nili Fossae
+carbonate-first experiment.
+
+Dataset
+-------
+  Name       : CRISM Type Spectra Library (MICA)
+  DATA_SET_ID: MRO-M-CRISM-4-TYPESPEC-V1.0
+  Producer   : Christina E. Viviano-Beck, Johns Hopkins University Applied
+               Physics Laboratory (reference: Viviano-Beck et al. 2014)
+  Source host: https://pds-geosciences.wustl.edu/mro/
+               mro-m-crism-4-typespec-v1/mrocr_8001/data/
+  Retrieved  : 2026-10-11
+
+Column layout (per the companion PDS .lbl):
+  col 1 (index 0): WAVELENGTH                      [micrometres, 0.436-3.897]
+  col 2 (index 1): CRISM RATIOED I/F CORRECTED     [dimensionless]  <- SAM ref
+  col 3 (index 2): CRISM RATIOED I/F
+  col 4 (index 3): CRISM I/F NUMERATOR CORRECTED
+  col 5 (index 4): CRISM I/F NUMERATOR
+  col 6 (index 5): CRISM I/F DENOMINATOR CORRECTED
+  col 7 (index 6): CRISM I/F DENOMINATOR
+  INVALID_CONSTANT = 65535
+
+The engine uses column 1 (wavelength, um) and column 2 (ratioed I/F corrected)
+by default; see io/reference.py.
+
+SHA-256 checksums (as retrieved; each file is 30240 bytes, 480 rows)
+--------------------------------------------------------------------
+  6245a393dd557f21880ef674410d2bc71bd811a79417f06313bab6317ca56bcc  crism_typespec_mg_carbonate.tab
+  97686ab280db002ea20428effba8b7d5ac72477e2cd36110960a5d45028ed3dd  crism_typespec_fe_ca_carbonate.tab
+  57f45e9af5feb7a81b5c02999d5187d537563e0e84ddba258651ad5c8aa0adbd  crism_typespec_mg_olivine.tab
+  71da999dd99f1e2c1cc63135e9ef2f6ca70961440ba36f7a096be01ae4aa8ce2  crism_typespec_fe_olivine.tab
+  6050fccfbdd6221e4851153d8c44bbbc16a8b3dae821643fc76fbf3fe8a1406c  crism_typespec_fe_smectite.tab
+
+Scientific note
+---------------
+These are REFERENCE end-member spectra (ratioed I/F), NOT scene data and NOT
+detections. MICA type spectra are RATIOED I/F while a CRISM MTRDR scene pixel is
+un-ratioed I/F; Spectral Angle Mapper is albedo-scale invariant and the
+engine's optional continuum removal + wavelength windowing partially mitigate
+this mismatch, but it is not fully eliminated. A SAM match against any of these
+references is a CANDIDATE match, never a confirmed mineral deposit.
+
+Additional MICA phases can be fetched on demand (single small files, never a
+bulk mirror) with:  marsgis-engine fetch-references --mineral <mica_key> --dest <dir>
+
+This is the ONLY non-synthetic data bundled in the engine package.

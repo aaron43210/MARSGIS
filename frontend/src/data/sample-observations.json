@@ -1,0 +1,62 @@
+{
+  "items": [
+    {
+      "id": "SYN_FRT_0001",
+      "instrument": "CRISM",
+      "product_type": "MTRDR",
+      "title": "SYNTHETIC MTRDR — Nili Fossae W (offline sample)",
+      "provider": "MarsGIS offline fixture",
+      "region": "Nili Fossae",
+      "bbox": [76.4, 20.6, 76.9, 21.1],
+      "center": { "lon": 76.65, "lat": 20.85 },
+      "footprint": {
+        "type": "Polygon",
+        "coordinates": [[[76.4, 20.6], [76.9, 20.6], [76.9, 21.1], [76.4, 21.1], [76.4, 20.6]]]
+      },
+      "acquired_at": "2010-03-01T00:00:00Z",
+      "resolution_m": 18,
+      "analysis_suitable": true,
+      "thumbnail_url": null
+    },
+    {
+      "id": "SYN_FRT_0002",
+      "instrument": "CRISM",
+      "product_type": "MTRDR",
+      "title": "SYNTHETIC MTRDR — Nili Fossae Central (offline sample)",
+      "provider": "MarsGIS offline fixture",
+      "region": "Nili Fossae",
+      "bbox": [77.0, 20.8, 77.5, 21.3],
+      "center": { "lon": 77.25, "lat": 21.05 },
+      "footprint": {
+        "type": "Polygon",
+        "coordinates": [[[77.0, 20.8], [77.5, 20.8], [77.5, 21.3], [77.0, 21.3], [77.0, 20.8]]]
+      },
+      "acquired_at": "2010-06-15T00:00:00Z",
+      "resolution_m": 18,
+      "analysis_suitable": true,
+      "thumbnail_url": null
+    },
+    {
+      "id": "SYN_FRT_0003",
+      "instrument": "CRISM",
+      "product_type": "MTRDR",
+      "title": "SYNTHETIC MTRDR — Nili Fossae E (offline sample)",
+      "provider": "MarsGIS offline fixture",
+      "region": "Nili Fossae",
+      "bbox": [77.6, 21.2, 78.1, 21.7],
+      "center": { "lon": 77.85, "lat": 21.45 },
+      "footprint": {
+        "type": "Polygon",
+        "coordinates": [[[77.6, 21.2], [78.1, 21.2], [78.1, 21.7], [77.6, 21.7], [77.6, 21.2]]]
+      },
+      "acquired_at": "2011-01-20T00:00:00Z",
+      "resolution_m": 18,
+      "analysis_suitable": false,
+      "thumbnail_url": null
+    }
+  ],
+  "total": 3,
+  "limit": 50,
+  "offset": 0,
+  "next_offset": null
+}

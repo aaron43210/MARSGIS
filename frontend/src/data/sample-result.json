@@ -1,0 +1,116 @@
+{
+  "id": "SYN_RESULT_0001",
+  "job_id": "SYN_JOB_0001",
+  "observation_id": "SYN_FRT_0002",
+  "algorithm": "SAM",
+  "reference_id": "mica_fe_ca_carbonate",
+  "mineral": "Fe/Ca carbonate (MICA)",
+  "rasters": {
+    "cog": {
+      "href": "__SAMPLE_DISABLED__",
+      "role": "primary_metric",
+      "media_type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "units": "radians",
+      "value_range": [0, 0.1],
+      "nodata": -9999,
+      "width": 64,
+      "height": 64,
+      "size_bytes": null
+    },
+    "angle": {
+      "href": "__SAMPLE_DISABLED__",
+      "role": "sam_angle",
+      "media_type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "units": "radians",
+      "value_range": [0, 1.5708],
+      "nodata": -9999,
+      "width": 64,
+      "height": 64,
+      "size_bytes": null
+    },
+    "mask": {
+      "href": "__SAMPLE_DISABLED__",
+      "role": "detection_mask",
+      "media_type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "units": "boolean",
+      "value_range": [0, 1],
+      "nodata": 255,
+      "width": 64,
+      "height": 64,
+      "size_bytes": null
+    },
+    "score": null
+  },
+  "bounds": [77.0, 20.8, 77.5, 21.3],
+  "value_range": [0, 0.1],
+  "legend": {
+    "title": "SAM spectral angle (candidate)",
+    "type": "continuous",
+    "colormap": "magma_r",
+    "value_range": [0, 0.1],
+    "units": "radians (≤ 0.10 rad = candidate)",
+    "stops": [
+      { "value": 0, "color": "#000004", "label": "0.00 rad (closest)" },
+      { "value": 0.05, "color": "#b63679", "label": "0.05 rad" },
+      { "value": 0.1, "color": "#fcfdbf", "label": "0.10 rad (threshold)" }
+    ],
+    "nodata_label": "no coverage / above threshold",
+    "caveat": "Candidate spectral match (SAM angle below threshold). NOT a confirmed mineral deposit; requires expert review and corroborating observations before any geologic claim."
+  },
+  "summary_stats": {
+    "pixel_count": 4096,
+    "valid_pixel_count": 3800,
+    "detected_pixel_count": 512,
+    "detected_fraction": 0.1347,
+    "min": 0.012,
+    "max": 1.42,
+    "mean": 0.31,
+    "median": 0.22,
+    "std": 0.19,
+    "threshold_rad": 0.1,
+    "reference_id": "mica_fe_ca_carbonate",
+    "mineral": "Fe/Ca carbonate (MICA)",
+    "histogram": null,
+    "caveat": "Candidate spectral match (SAM angle below threshold). NOT a confirmed mineral deposit; requires expert review and corroborating observations before any geologic claim."
+  },
+  "map_layer": {
+    "id": "SYN_RESULT_0001_layer",
+    "type": "result_tiles",
+    "title": "SAM carbonate candidate (SYNTHETIC)",
+    "subtitle": "offline sample overlay",
+    "is_base": false,
+    "default_visible": true,
+    "source": {
+      "url_template": "__SAMPLE_RESULT_PNG__",
+      "tiling_scheme": "geographic",
+      "tile_order": "zxy",
+      "tile_size": 256,
+      "file_extension": "png",
+      "level_zero_tiles_x": 2,
+      "level_zero_tiles_y": 1,
+      "min_zoom": 0,
+      "max_zoom": 8,
+      "subdomains": null,
+      "tile_matrix_set": null,
+      "request_headers": null,
+      "provider": "MarsGIS offline fixture"
+    },
+    "style": { "opacity": 0.8, "colormap": "magma_r", "value_range": [0, 0.1], "z_index": 100 },
+    "attribution": "MarsGIS offline fixture (SYNTHETIC)",
+    "availability": {
+      "status": "verified",
+      "checked_at": "2026-01-01T00:00:00Z",
+      "sample_tile_url": null,
+      "http_status": null,
+      "note": "Bundled single-image overlay for offline demo."
+    },
+    "bounds": [77.0, 20.8, 77.5, 21.3],
+    "legend": null,
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-01-01T00:00:00Z"
+  },
+  "provenance_id": "SYN_PROV_0001",
+  "caveat": "Candidate spectral match (SAM angle below threshold). NOT a confirmed mineral deposit; requires expert review and corroborating observations before any geologic claim.",
+  "created_at": "2026-01-01T00:00:00Z",
+  "updated_at": "2026-01-01T00:00:00Z"
+}

@@ -1,0 +1,12 @@
+[
+  { "id": "nili_fossae", "name": "Nili Fossae", "cleanName": "Nili Fossae", "featureType": "Fossae", "lon": 77.0, "lat": 22.0, "diameterKm": 667 },
+  { "id": "jezero", "name": "Jezero", "cleanName": "Jezero", "featureType": "Crater", "lon": 77.58, "lat": 18.38, "diameterKm": 45 },
+  { "id": "syrtis_major", "name": "Syrtis Major Planum", "cleanName": "Syrtis Major Planum", "featureType": "Planum", "lon": 69.5, "lat": 8.4, "diameterKm": 1350 },
+  { "id": "isidis_planitia", "name": "Isidis Planitia", "cleanName": "Isidis Planitia", "featureType": "Planitia", "lon": 87.0, "lat": 12.9, "diameterKm": 1500 },
+  { "id": "olympus_mons", "name": "Olympus Mons", "cleanName": "Olympus Mons", "featureType": "Mons", "lon": -133.8, "lat": 18.65, "diameterKm": 610 },
+  { "id": "valles_marineris", "name": "Valles Marineris", "cleanName": "Valles Marineris", "featureType": "Valles", "lon": -59.0, "lat": -14.0, "diameterKm": 3800 },
+  { "id": "gale", "name": "Gale", "cleanName": "Gale", "featureType": "Crater", "lon": 137.8, "lat": -5.4, "diameterKm": 154 },
+  { "id": "gusev", "name": "Gusev", "cleanName": "Gusev", "featureType": "Crater", "lon": 175.4, "lat": -14.6, "diameterKm": 166 },
+  { "id": "hellas_planitia", "name": "Hellas Planitia", "cleanName": "Hellas Planitia", "featureType": "Planitia", "lon": 70.5, "lat": -42.4, "diameterKm": 2300 },
+  { "id": "meridiani_planum", "name": "Meridiani Planum", "cleanName": "Meridiani Planum", "featureType": "Planum", "lon": -5.0, "lat": -1.4, "diameterKm": 1127 }
+]

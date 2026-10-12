@@ -41,7 +41,10 @@ BBOX_WSEN = (76.9404, 22.1347, 77.2127, 22.3863)
 MARS_GEOGRAPHIC = "+proj=longlat +R=3396190 +no_defs"
 
 _CUBE = (
-    Path(__file__).resolve().parent / "fixtures" / "real_mtrdr_subset" / f"{OBSERVATION_ID}_subset.img"
+    Path(__file__).resolve().parent
+    / "fixtures"
+    / "real_mtrdr_subset"
+    / f"{OBSERVATION_ID}_subset.img"
 )
 
 pytestmark = pytest.mark.skipif(not _CUBE.exists(), reason=f"real fixture absent ({_CUBE})")
