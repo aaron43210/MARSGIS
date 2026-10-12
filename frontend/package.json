@@ -16,6 +16,7 @@
   "dependencies": {
     "cesium": "1.146.0",
     "immer": "11.1.21",
+    "mars-globe": "file:../packages/mars-globe",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "uplot": "1.6.32",
