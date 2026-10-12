@@ -23,6 +23,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
+      - name: Build mars-globe
+        run: |
+          cd ../packages/mars-globe
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm run build
       - name: Install deps
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi

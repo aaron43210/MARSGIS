@@ -12,6 +12,9 @@ ARG PYTHON_VERSION=3.12
 # ── Stage 1: build the React/CesiumJS SPA ────────────────────────────────────
 FROM node:${NODE_VERSION}-bookworm-slim AS frontend-build
 ENV CI=true
+WORKDIR /packages/mars-globe
+COPY packages/mars-globe/ ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run build
 WORKDIR /frontend
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install --include=dev; fi
@@ -20,7 +23,7 @@ ARG VITE_API_URL="/"
 ARG VITE_USE_MOCKS="false"
 ARG VITE_DEFAULT_BASEMAP="viking"
 ARG VITE_CESIUM_BASE_URL="/cesium"
-ARG VITE_TREK_VIA_PROXY="true"
+ARG VITE_TREK_VIA_PROXY="false"
 ENV VITE_API_URL=${VITE_API_URL} \
     VITE_USE_MOCKS=${VITE_USE_MOCKS} \
     VITE_DEFAULT_BASEMAP=${VITE_DEFAULT_BASEMAP} \
