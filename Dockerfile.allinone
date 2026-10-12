@@ -1,0 +1,96 @@
+# syntax=docker/dockerfile:1.7
+# MarsGIS all-in-one image — ghcr.io/aaron43210/marsgis:latest
+#
+# Packages: React/CesiumJS SPA (nginx :8080) + FastAPI backend (uvicorn :8000)
+# + marsgis_engine in-process — everything your friend needs in one container.
+#
+# Ports exposed:  8080 (nginx → SPA + proxies /api/* to uvicorn)
+# Run:  docker run -d -p 8080:8080 ghcr.io/aaron43210/marsgis:latest
+ARG NODE_VERSION=24
+ARG PYTHON_VERSION=3.12
+
+# ── Stage 1: build the React/CesiumJS SPA ────────────────────────────────────
+FROM node:${NODE_VERSION}-bookworm-slim AS frontend-build
+ENV CI=true
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install --include=dev; fi
+COPY frontend/ .
+ARG VITE_API_URL="/"
+ARG VITE_USE_MOCKS="false"
+ARG VITE_DEFAULT_BASEMAP="viking"
+ARG VITE_CESIUM_BASE_URL="/cesium"
+ARG VITE_TREK_VIA_PROXY="true"
+ENV VITE_API_URL=${VITE_API_URL} \
+    VITE_USE_MOCKS=${VITE_USE_MOCKS} \
+    VITE_DEFAULT_BASEMAP=${VITE_DEFAULT_BASEMAP} \
+    VITE_CESIUM_BASE_URL=${VITE_CESIUM_BASE_URL} \
+    VITE_TREK_VIA_PROXY=${VITE_TREK_VIA_PROXY}
+RUN npm run build
+
+# ── Stage 2: build the Python venv (backend + engine) ────────────────────────
+FROM python:${PYTHON_VERSION}-slim-bookworm AS python-build
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONDONTWRITEBYTECODE=1
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+# Install engine first (backend imports it in-process)
+COPY engine/requirements.txt /tmp/engine-requirements.txt
+RUN pip install --upgrade pip && pip install -r /tmp/engine-requirements.txt
+# Copy full engine dir (pyproject.toml + src/) so it is pip-installable
+COPY engine/ /build/engine/
+RUN pip install --no-deps /build/engine/
+# Install backend
+COPY backend/requirements.txt /tmp/backend-requirements.txt
+RUN pip install -r /tmp/backend-requirements.txt
+
+# ── Stage 3: runtime — nginx + uvicorn in one container ──────────────────────
+FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
+LABEL org.opencontainers.image.title="marsgis" \
+      org.opencontainers.image.description="MarsGIS all-in-one: React/CesiumJS 3D Mars globe + FastAPI backend + SAM engine" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.source="https://github.com/aaron43210/MARSGIS"
+
+# Install nginx, curl, and libexpat1 (required by rasterio/GDAL to write GeoTIFFs)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nginx gettext-base curl libexpat1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Python venv from builder
+COPY --from=python-build /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app \
+    STORAGE_ROOT=/data
+
+# Copy backend application code
+WORKDIR /app
+COPY backend/alembic.ini ./
+COPY backend/app ./app
+COPY contracts/ /contracts/
+COPY engine/sample_data/ /engine/sample_data/
+
+# Copy built SPA into nginx html root
+COPY --from=frontend-build /frontend/dist /usr/share/nginx/html
+
+# nginx config: serve SPA on :8080, proxy /api/* → uvicorn on :8000
+COPY docker/nginx-allinone.conf /etc/nginx/sites-available/default
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+# Startup script: starts uvicorn in background then nginx in foreground
+COPY docker/start-allinone.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh \
+    && mkdir -p /data /app/storage \
+    && chown -R www-data:www-data /usr/share/nginx/html
+
+EXPOSE 8080
+HEALTHCHECK --interval=20s --timeout=8s --start-period=30s --retries=5 \
+    CMD curl -sf http://127.0.0.1:8080/healthz || exit 1
+
+ENTRYPOINT ["/usr/local/bin/start.sh"]

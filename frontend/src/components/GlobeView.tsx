@@ -34,16 +34,27 @@ export function GlobeView(): React.ReactElement {
     const detachStore = attachStoreToCesium({ viewer, layerManager, footprintLayer, resultOverlay });
     const detachPicking = installPicking(viewer, store, footprintLayer);
 
-    // Restore persisted camera (or default to Nili Fossae regional view).
+    // Start camera pulled back in outer space to create a stunning planetary zoom-in experience.
     const cam = store.getState().camera;
     viewer.camera.setView({
-      destination: Cartesian3.fromDegrees(cam.lon, cam.lat, cam.height),
+      destination: Cartesian3.fromDegrees(cam.lon, cam.lat, 18_000_000),
       orientation: {
         heading: CesiumMath.toRadians(cam.heading),
-        pitch: CesiumMath.toRadians(cam.pitch),
-        roll: CesiumMath.toRadians(cam.roll),
+        pitch: CesiumMath.toRadians(-90),
+        roll: 0,
       },
     });
+
+    // Smoothly fly down to layer observation altitude
+    const introTimer = setTimeout(() => {
+      if (!viewer.isDestroyed()) {
+        viewer.camera.flyTo({
+          destination: Cartesian3.fromDegrees(cam.lon, cam.lat, Math.max(Math.min(cam.height, 3_500_000), 1_800_000)),
+          duration: 2.2,
+          complete: () => viewer.scene.requestRender(),
+        });
+      }
+    }, 250);
 
     // Write camera back to the store (debounced) so persist + URL sync capture it.
     const writeCamera = debounce(() => {
@@ -63,6 +74,7 @@ export function GlobeView(): React.ReactElement {
     viewer.scene.requestRender();
 
     return () => {
+      clearTimeout(introTimer);
       writeCamera.cancel();
       viewer.camera.moveEnd.removeEventListener(moveEndListener);
       detachPicking();

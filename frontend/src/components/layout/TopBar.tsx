@@ -8,10 +8,12 @@ export function TopBar(): React.ReactElement {
   const basemapId = useStore((s) => s.basemapId);
   const setBasemap = useStore((s) => s.setBasemap);
   const selectFeature = useStore((s) => s.selectFeature);
+  const requestFlyTo = useStore((s) => s.requestFlyTo);
 
   const flyNili = (): void => {
     const nili = allFeatures().find((f) => f.id === 'nili_fossae');
     if (nili) selectFeature(nili);
+    else requestFlyTo(null);
   };
 
   return (
@@ -38,7 +40,17 @@ export function TopBar(): React.ReactElement {
         </select>
       </label>
 
-      <button className="btn" onClick={flyNili} title="Fly to Nili Fossae">
+      <button
+        className="btn"
+        onClick={() => requestFlyTo(null)}
+        title="Auto-center and Zoom to Layer"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+      >
+        <span aria-hidden="true">🎯</span>
+        <span>Auto-Center</span>
+      </button>
+
+      <button className="btn btn-ghost" onClick={flyNili} title="Fly to Nili Fossae regional view">
         Nili Fossae
       </button>
 

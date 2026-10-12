@@ -52,6 +52,7 @@ export function attachStoreToCesium(managers: CesiumManagers): () => void {
   );
 
   let prevFeatureId = store.getState().selectedFeature?.id ?? null;
+  let prevFlyToTime = store.getState().flyToTarget?.timestamp ?? 0;
 
   const unsub = store.subscribe((state: AppState) => {
     // Imagery stack (basemap + overlays).
@@ -64,7 +65,21 @@ export function attachStoreToCesium(managers: CesiumManagers): () => void {
     // Footprints (observation set changed).
     if (state.observations !== prevObservations) {
       footprintLayer.load(state.observations);
+      // Auto-centre and fly to encompass observations when first loaded
+      if (prevObservations.length === 0 && state.observations.length > 0 && !state.selectedObservationId) {
+        footprintLayer.flyToAllObservations(2.2);
+      }
       prevObservations = state.observations;
+    }
+
+    // Explicit fly-to trigger (from Auto-Center button or observation card clicks)
+    if (state.flyToTarget && state.flyToTarget.timestamp !== prevFlyToTime) {
+      prevFlyToTime = state.flyToTarget.timestamp;
+      if (state.flyToTarget.id) {
+        footprintLayer.flyToObservation(state.flyToTarget.id);
+      } else {
+        footprintLayer.flyToAllObservations(2.0);
+      }
     }
 
     // Footprint selection / hover styling.

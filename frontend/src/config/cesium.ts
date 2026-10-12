@@ -61,7 +61,7 @@ export function applyMarsSceneTweaks(viewer: Viewer): void {
   const globe = scene.globe;
   globe.showGroundAtmosphere = false;
   globe.enableLighting = false;
-  globe.baseColor = Color.fromCssColorString('#1a1410'); // dark basalt when tiles are missing
+  globe.baseColor = Color.fromCssColorString('#7c3f25'); // Martian ferric oxide / rust red
   globe.tileCacheSize = 1000;
   if (scene.skyAtmosphere) scene.skyAtmosphere.show = false;
   if (scene.sun) scene.sun.show = false;
