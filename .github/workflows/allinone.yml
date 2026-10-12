@@ -3,15 +3,6 @@ name: Build and Publish All-in-One Image
 on:
   push:
     branches: ["main"]
-    paths:
-      - "Dockerfile.allinone"
-      - "docker/nginx-allinone.conf"
-      - "docker/start-allinone.sh"
-      - "frontend/**"
-      - "backend/**"
-      - "engine/**"
-      - "contracts/**"
-      - ".github/workflows/allinone.yml"
   workflow_dispatch:
 
 permissions:
