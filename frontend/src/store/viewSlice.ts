@@ -74,7 +74,10 @@ export const createViewSlice: AppSlice<ViewSlice> = (set) => ({
 
   setCamera: (camera) =>
     set((state) => {
-      state.camera = camera;
+      state.camera = {
+        ...camera,
+        height: Math.max(10_000, camera.height),
+      };
     }),
 
   setBasemap: (id) =>

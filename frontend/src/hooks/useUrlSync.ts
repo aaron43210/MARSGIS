@@ -28,7 +28,9 @@ export function useUrlSync(): void {
     const lat = parseNum(params.get('lat'));
     const h = parseNum(params.get('h'));
     if (lon != null && lat != null) {
-      state.setCamera({ ...state.camera, lon, lat, height: h ?? state.camera.height });
+      // Prevent underground clipping when h is zero/subterranean from test query strings (e.g. h=2)
+      const height = h != null && h >= 10_000 ? h : state.camera.height;
+      state.setCamera({ ...state.camera, lon, lat, height });
     }
 
     const obs = params.get('obs');

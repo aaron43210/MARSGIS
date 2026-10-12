@@ -79,6 +79,7 @@ export default defineConfig(({ mode }) => {
         targets: cesiumAssets.map((dir) => ({
           src: path.posix.join(cesiumSource, dir),
           dest: 'cesium',
+          rename: { stripBase: 4 },
         })),
       }),
     ],
