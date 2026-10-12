@@ -38,15 +38,17 @@ frontend/.vite/
 *.TIF
 *.hdf
 *.h5
-data/
+/data/
 downloads/
 outputs/
 storage/
 *.sqlite
 *.sqlite3
 *.db
-# allow tiny committed samples / test fixtures
+# allow tiny committed samples / test fixtures and app data
 !engine/sample_data/**
+!engine/src/marsgis_engine/data/**
+!frontend/src/data/**
 !**/tests/fixtures/**
 # ...but the blanket negation above must NOT re-include bytecode/caches under fixtures
 **/tests/fixtures/**/__pycache__/

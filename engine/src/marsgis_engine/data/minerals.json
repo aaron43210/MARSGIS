@@ -1,0 +1,42 @@
+[
+  {
+    "alias": ["carbonate", "mg_carbonate", "magnesite"],
+    "mica_key": "mg_carbonate",
+    "file": "crism_typespec_mg_carbonate.tab",
+    "mineral_class": "carbonate",
+    "diagnostic_window_nm": [2200, 2600],
+    "notes": "Mg-carbonate 2.3/2.5 um doublet (Nili Fossae; Ehlmann et al. 2008). Primary carbonate reference."
+  },
+  {
+    "alias": ["fe_ca_carbonate", "calcite", "siderite"],
+    "mica_key": "fe_ca_carbonate",
+    "file": "crism_typespec_fe_ca_carbonate.tab",
+    "mineral_class": "carbonate",
+    "diagnostic_window_nm": [2200, 2600],
+    "notes": "Fe/Ca-carbonate 2.3/2.5 um doublet. Alternate carbonate end-member."
+  },
+  {
+    "alias": ["olivine", "mg_olivine", "forsterite"],
+    "mica_key": "mg_olivine",
+    "file": "crism_typespec_mg_olivine.tab",
+    "mineral_class": "olivine",
+    "diagnostic_window_nm": [1000, 1800],
+    "notes": "Mg-olivine broad Fe2+ absorption centred ~1.05 um."
+  },
+  {
+    "alias": ["fe_olivine", "fayalite"],
+    "mica_key": "fe_olivine",
+    "file": "crism_typespec_fe_olivine.tab",
+    "mineral_class": "olivine",
+    "diagnostic_window_nm": [1000, 1800],
+    "notes": "Fe-olivine broad ~1 um absorption (longer-wavelength shifted vs Mg-olivine)."
+  },
+  {
+    "alias": ["clay", "smectite", "fe_smectite", "nontronite", "phyllosilicate"],
+    "mica_key": "fe_smectite",
+    "file": "crism_typespec_fe_smectite.tab",
+    "mineral_class": "phyllosilicate",
+    "diagnostic_window_nm": [1850, 2400],
+    "notes": "Fe-smectite (nontronite) 1.9 um H2O and 2.29 um Fe-OH features."
+  }
+]
