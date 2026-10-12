@@ -38,8 +38,8 @@ export class ErrorBoundary extends Component<Props, State> {
     const { children, fallback } = this.props;
 
     if (error) {
-      if (fallback) return fallback(error, this.reset);
-      return <DefaultFallback error={error} reset={this.reset} />;
+      if (fallback) return fallback(error, () => { this.reset(); });
+      return <DefaultFallback error={error} reset={() => { this.reset(); }} />;
     }
     return children;
   }
