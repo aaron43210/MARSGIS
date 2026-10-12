@@ -12,12 +12,15 @@ ARG NODE_VERSION=24
 # ----------------------------------------------------------------------------
 FROM node:${NODE_VERSION}-bookworm-slim AS build
 ENV CI=true
-WORKDIR /app
-COPY package.json package-lock.json* ./
+WORKDIR /packages/mars-globe
+COPY packages/mars-globe/ ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run build
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json* ./
 # `npm ci` requires a committed lockfile; fall back to `npm install` when the
 # frontend concern has not committed package-lock.json yet.
 RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install --include=dev; fi
-COPY . .
+COPY frontend/ .
 ARG VITE_API_URL="/"
 ARG VITE_USE_MOCKS="false"
 ARG VITE_DEFAULT_BASEMAP="viking"
@@ -40,8 +43,8 @@ LABEL org.opencontainers.image.title="marsgis-frontend" \
 # BACKEND_UPSTREAM is substituted into the config at container start via the
 # stock nginx `envsubst`-on-templates mechanism.
 ENV BACKEND_UPSTREAM="http://backend:8000"
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /frontend/dist /usr/share/nginx/html
+COPY frontend/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
     CMD ["wget", "-qO", "/dev/null", "http://127.0.0.1:8080/healthz"]
