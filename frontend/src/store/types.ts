@@ -99,6 +99,8 @@ export interface CatalogSlice {
   setFilters: (patch: Partial<ObservationQuery>) => void;
   selectObservation: (id: string | null) => void;
   hoverObservation: (id: string | null) => void;
+  flyToTarget: { id: string | null; timestamp: number } | null;
+  requestFlyTo: (id?: string | null) => void;
   discoverStatus: AsyncStatus;
   discoverError: string | null;
   lastDiscovery: { label: string; found: number } | null;

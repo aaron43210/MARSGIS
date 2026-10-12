@@ -20,9 +20,15 @@ export const createCatalogSlice: AppSlice<CatalogSlice> = (set, get) => ({
   observationsError: null,
   selectedObservationId: null,
   hoveredObservationId: null,
+  flyToTarget: null,
   discoverStatus: 'idle',
-  discoverError: null,
   lastDiscovery: null,
+  discoverError: null,
+
+  requestFlyTo: (id = null) =>
+    set((state) => {
+      state.flyToTarget = { id: id ?? null, timestamp: Date.now() };
+    }),
 
   loadObservations: async () => {
     set((state) => {
@@ -57,6 +63,9 @@ export const createCatalogSlice: AppSlice<CatalogSlice> = (set, get) => ({
       state.selectedObservationId = id;
       // Auto-populate the analysis config so switching to Analysis mode is one click.
       state.config.observation_id = id;
+      if (id) {
+        state.flyToTarget = { id, timestamp: Date.now() };
+      }
     }),
 
   hoverObservation: (id) =>

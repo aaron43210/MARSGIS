@@ -153,11 +153,34 @@ export class FootprintLayer {
     this.flyToRectangle(west, south, east, north);
   }
 
-  /** Fly to a bbox rectangle (used when no entity exists yet). */
-  flyToRectangle(west: number, south: number, east: number, north: number): void {
+  /** Fly to frame all loaded observation footprints combined (auto-centre layer view). */
+  flyToAllObservations(duration = 2.0): void {
+    if (this.bboxes.size === 0) return;
+    let minW = 180;
+    let minS = 90;
+    let maxE = -180;
+    let maxN = -90;
+    for (const [w, s, e, n] of this.bboxes.values()) {
+      if (w < minW) minW = w;
+      if (s < minS) minS = s;
+      if (e > maxE) maxE = e;
+      if (n > maxN) maxN = n;
+    }
+    const cx = (minW + maxE) / 2;
+    const cy = (minS + maxN) / 2;
+    const span = Math.max(maxE - minW, maxN - minS, 1.5) * 1.6;
+    const west = Math.max(-180, cx - span);
+    const east = Math.min(180, cx + span);
+    const south = Math.max(-90, cy - span);
+    const north = Math.min(90, cy + span);
+    this.flyToRectangle(west, south, east, north, duration);
+  }
+
+  /** Fly to a bbox rectangle. */
+  flyToRectangle(west: number, south: number, east: number, north: number, duration = 1.8): void {
     this.viewer.camera.flyTo({
       destination: Rectangle.fromDegrees(west, south, east, north),
-      duration: 1.2,
+      duration,
       complete: () => this.viewer.scene.requestRender(),
     });
   }
