@@ -4,9 +4,15 @@ import {
   Ellipsoid,
   EllipsoidTerrainProvider,
   Color,
+  Ion,
   type Viewer,
 } from 'cesium';
 import { MARS_RADII } from './constants';
+
+// We don't use Cesium Ion — clear the default token so Cesium never attempts
+// to reach api.cesium.com (which would fail in isolated/docker environments and
+// could produce uncaught errors that interfere with globe rendering).
+Ion.defaultAccessToken = '';
 
 let marsInstalled = false;
 
@@ -59,6 +65,7 @@ export function viewerOptions(): Viewer.ConstructorOptions {
 export function applyMarsSceneTweaks(viewer: Viewer): void {
   const scene = viewer.scene;
   const globe = scene.globe;
+  globe.show = true; // Explicitly ensure globe is visible
   globe.showGroundAtmosphere = false;
   globe.enableLighting = false;
   globe.baseColor = Color.fromCssColorString('#7c3f25'); // Martian ferric oxide / rust red
@@ -69,5 +76,5 @@ export function applyMarsSceneTweaks(viewer: Viewer): void {
   // Keep the starfield skybox for spatial reference.
   scene.fog.enabled = false;
   scene.backgroundColor = Color.fromCssColorString('#05070b');
-  // No Cesium Ion token is used anywhere (custom ellipsoid + Trek imagery only).
+  // No Cesium Ion assets used — token cleared at module load time.
 }
