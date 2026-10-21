@@ -27,7 +27,16 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
 
+# The in-process job runner keeps its queue in process memory and treats any
+# `running` row it finds at startup as its own orphan, so it must be the ONLY
+# web worker. Multiple workers are only safe with JOB_BACKEND=arq.
+WORKERS="${WEB_CONCURRENCY:-2}"
+if [ "${JOB_BACKEND:-inprocess}" != "arq" ] && [ "${WORKERS}" != "1" ]; then
+  echo "[entrypoint] JOB_BACKEND=${JOB_BACKEND:-inprocess} requires one web worker; ignoring WEB_CONCURRENCY=${WORKERS}"
+  WORKERS=1
+fi
+
 exec python -m uvicorn app.main:app \
   --host 0.0.0.0 \
   --port 8000 \
-  --workers "${WEB_CONCURRENCY:-2}"
+  --workers "${WORKERS}"

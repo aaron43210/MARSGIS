@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import anyio
+from sqlalchemy import update
 
 from app.config import Settings, get_settings
 from app.core.colormaps import build_legend
@@ -322,29 +323,53 @@ async def _fail_job(job_id: str, exc: Exception) -> None:
     _log.warning("job.failed", job_id=job_id, error=str(exc))
 
 
+async def _claim_job(job_id: str, *, started: datetime, reclaim_running: bool) -> bool:
+    """Atomically move the job to ``running``; True only for the single winner.
+
+    A compare-and-swap ``UPDATE ... WHERE status IN (...)`` rather than
+    read-then-write, so when several processes hold the same id (e.g. every
+    uvicorn worker re-enqueues ``queued`` rows at startup, or a duplicate
+    enqueue) exactly one executes it. ``reclaim_running`` additionally lets an
+    arq retry pick up a job whose previous worker died mid-run.
+    """
+    claimable = [JobStatus.queued.value]
+    if reclaim_running:
+        claimable.append(JobStatus.running.value)
+    async with session_scope() as session:
+        res = await session.execute(
+            update(AnalysisJobRow)
+            .where(AnalysisJobRow.id == job_id)
+            .where(AnalysisJobRow.status.in_(claimable))
+            .values(
+                status=JobStatus.running.value,
+                started_at=started,
+                progress=0.05,
+                message="starting",
+                updated_at=utcnow(),
+            )
+        )
+        return res.rowcount == 1
+
+
 async def run_analysis_job(
     job_id: str,
     *,
     adapter: EngineAdapter,
     settings: Settings | None = None,
+    reclaim_running: bool = False,
 ) -> None:
     settings = settings or get_settings()
     started = utcnow()
 
-    # 1. Mark running + snapshot inputs (ORM objects never cross the thread).
+    # 1. Claim the job (atomic) + snapshot inputs (ORM objects never cross the thread).
+    if not await _claim_job(job_id, started=started, reclaim_running=reclaim_running):
+        _log.info("job.not_claimed", job_id=job_id)
+        return
     async with session_scope() as session:
         job = await session.get(AnalysisJobRow, job_id)
         if job is None:
             _log.warning("job.missing", job_id=job_id)
             return
-        if JobStatus(job.status) in (JobStatus.succeeded, JobStatus.failed):
-            return
-        job.status = JobStatus.running.value
-        job.started_at = started
-        job.progress = 0.05
-        job.message = "starting"
-        job.updated_at = utcnow()
-        session.add(job)
         inputs = await _load_inputs(session, job)
 
     try:
@@ -385,16 +410,25 @@ async def run_analysis_job(
             engine_result=engine_result,
             started=started,
         )
+        # Only running -> succeeded: a job already failed elsewhere (timeout,
+        # restart recovery) must never flip back to succeeded.
         async with session_scope() as session:
-            job = await session.get(AnalysisJobRow, job_id)
-            if job is not None:
-                job.status = JobStatus.succeeded.value
-                job.progress = 1.0
-                job.message = "succeeded"
-                job.result_id = result_id
-                job.finished_at = utcnow()
-                job.updated_at = utcnow()
-                session.add(job)
+            res = await session.execute(
+                update(AnalysisJobRow)
+                .where(AnalysisJobRow.id == job_id)
+                .where(AnalysisJobRow.status == JobStatus.running.value)
+                .values(
+                    status=JobStatus.succeeded.value,
+                    progress=1.0,
+                    message="succeeded",
+                    result_id=result_id,
+                    finished_at=utcnow(),
+                    updated_at=utcnow(),
+                )
+            )
+        if res.rowcount != 1:
+            _log.warning("job.finished_after_terminal", job_id=job_id, result_id=result_id)
+            return
         _log.info("job.succeeded", job_id=job_id, result_id=result_id, synthetic=is_synthetic)
     except Exception as exc:  # noqa: BLE001 - map every failure onto job state
         await _fail_job(job_id, exc)

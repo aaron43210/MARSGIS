@@ -177,11 +177,23 @@ def _rlimit_preexec(settings: Settings):  # pragma: no cover - POSIX only
         return None
     import resource
 
+    cpu = settings.engine_rlimit_cpu_s
+    mem = settings.engine_rlimit_as_mb * 1024 * 1024
+    limits = [(resource.RLIMIT_CPU, cpu, cpu + 5), (resource.RLIMIT_AS, mem, mem)]
+
     def _apply() -> None:
-        cpu = settings.engine_rlimit_cpu_s
-        resource.setrlimit(resource.RLIMIT_CPU, (cpu, cpu + 5))
-        mem = settings.engine_rlimit_as_mb * 1024 * 1024
-        resource.setrlimit(resource.RLIMIT_AS, (mem, mem))
+        # Best-effort per limit: an exception here aborts the launch, and some
+        # platforms (macOS) reject RLIMIT_AS outright. Never raise above the
+        # inherited hard limit either (an unprivileged process cannot).
+        for which, soft, hard in limits:
+            try:
+                _cur_soft, cur_hard = resource.getrlimit(which)
+                if cur_hard != resource.RLIM_INFINITY:
+                    hard = min(hard, cur_hard)
+                    soft = min(soft, hard)
+                resource.setrlimit(which, (soft, hard))
+            except (ValueError, OSError):
+                pass
 
     return _apply
 
@@ -224,7 +236,7 @@ class _CliEngine:
             )
         except subprocess.TimeoutExpired as exc:
             raise EngineError("engine timed out", detail=str(exc)) from exc
-        except OSError as exc:
+        except (OSError, subprocess.SubprocessError) as exc:
             raise EngineError("could not launch engine", detail=str(exc)) from exc
 
         if proc.returncode != 0:
@@ -259,31 +271,55 @@ class _CliEngine:
         )
 
 
+def _run_args(request: EngineRequest, *, cube: str, out: str) -> list[str]:
+    """``marsgis-engine run`` arguments carrying EVERY request parameter.
+
+    Mirrors :func:`_build_run_params` (the in-process path) so all three engine
+    modes run the same science and the provenance matches what actually ran.
+    """
+    wmin, wmax = request.wavelength_subset_nm or (1000.0, 2600.0)
+    argv = [
+        "run",
+        "--cube",
+        cube,
+        "--mineral",
+        request.reference_spec,
+        "--method",
+        "SAM",
+        "--threshold",
+        str(request.threshold_rad),
+        "--threshold-units",
+        "rad",
+        "--wmin",
+        str(wmin),
+        "--wmax",
+        str(wmax),
+        "--wavelength-units",
+        "nm",
+        "--continuum-removal" if request.continuum_removed else "--no-continuum-removal",
+        "--mask-bad-bands",
+        "--resample",
+        "linear",
+        "--mars-crs",
+        MARS2000_EQUIRECT_WKT,
+        "--out",
+        out,
+        "--out-prefix",
+        request.result_id,
+    ]
+    if request.timestamp:
+        argv += ["--timestamp", request.timestamp]
+    return argv
+
+
 class SubprocessEngine(_CliEngine):
     def _base_cmd(self) -> list[str]:
         return [sys.executable, "-m", "marsgis_engine"]
 
     def _argv(self, request: EngineRequest) -> list[str]:
-        argv = self._base_cmd() + [
-            "run",
-            "--cube",
-            str(request.cube_path),
-            "--mineral",
-            request.reference_spec,
-            "--method",
-            "SAM",
-            "--threshold",
-            str(request.threshold_rad),
-            "--threshold-units",
-            "rad",
-            "--out",
-            str(request.out_dir),
-            "--out-prefix",
-            request.result_id,
-        ]
-        if request.timestamp:
-            argv += ["--timestamp", request.timestamp]
-        return argv
+        return self._base_cmd() + _run_args(
+            request, cube=str(request.cube_path), out=str(request.out_dir)
+        )
 
 
 class ContainerEngine(_CliEngine):
@@ -306,22 +342,7 @@ class ContainerEngine(_CliEngine):
             "-v",
             f"{out}:/out",
             self._settings.engine_image,
-            "run",
-            "--cube",
-            f"/in/{cube.name}",
-            "--mineral",
-            request.reference_spec,
-            "--method",
-            "SAM",
-            "--threshold",
-            str(request.threshold_rad),
-            "--threshold-units",
-            "rad",
-            "--out",
-            "/out",
-            "--out-prefix",
-            request.result_id,
-        ]
+        ] + _run_args(request, cube=f"/in/{cube.name}", out="/out")
 
 
 def build_engine_adapter(settings: Settings | None = None) -> EngineAdapter:

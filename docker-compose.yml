@@ -50,6 +50,11 @@ services:
       ENGINE_MODE: ${ENGINE_MODE:-inprocess}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      # The backend only ever sees the frontend nginx container as its peer, so
+      # without this every visitor shares ONE quota bucket. nginx appends the
+      # real client as the right-most X-Forwarded-For hop, which is what the
+      # backend reads. Safe because the backend port is bound to 127.0.0.1 only.
+      TRUST_FORWARDED_FOR: ${TRUST_FORWARDED_FOR:-true}
     depends_on:
       db:
         condition: service_healthy

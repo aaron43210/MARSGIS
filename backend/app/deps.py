@@ -47,9 +47,18 @@ def _client_ip(request: Request) -> str:
 
 
 def client_fingerprint(request: Request) -> str:
-    """Opaque per-client id: IP plus the API key (if any), hashed."""
+    """Opaque per-client id: IP plus the API key, hashed.
+
+    The key is only part of the identity when it is a VALIDATED key
+    (REQUIRE_API_KEY on and the key listed). Otherwise the header is
+    client-chosen, and mixing it in would let a client mint a fresh quota bucket
+    per request just by sending a random X-API-Key.
+    """
+    settings = get_settings()
     ip = _client_ip(request)
     api_key = request.headers.get("x-api-key", "")
+    if not (settings.require_api_key and api_key in set(settings.api_keys)):
+        api_key = ""
     raw = f"{ip}|{api_key}".encode()
     return hashlib.sha256(raw).hexdigest()[:32]
 
