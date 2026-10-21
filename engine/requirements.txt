@@ -18,13 +18,13 @@ numpy==2.5.4
 rasterio==1.5.2
 spectral==0.25
 scipy==1.18.1
-affine==2.4.0
+affine==3.0.1
 
 # Key transitive dependencies (rasterio / numpy stack) — pinned for
 # reproducibility; the generated lockfile enumerates the complete closure.
 click==8.5.0
 click-plugins==1.1.1
 cligj==0.7.2
-attrs==25.4.0
+attrs==26.1.0
 certifi==2026.10.18
 pyparsing==3.3.3
