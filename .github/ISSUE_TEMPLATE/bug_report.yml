@@ -1,0 +1,33 @@
+name: Bug report
+description: Something in MarsGIS or mars-globe doesn't work as expected
+labels: [bug]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [Frontend (map app), Backend API, Engine (SAM / CLI), mars-globe (npm package), Docker / deployment, Docs]
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the steps to reproduce and what you expected instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: e.g. mars-globe 1.0.0, or commit 98179b1
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, Node/Python version, Docker or local, as relevant.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      render: shell
