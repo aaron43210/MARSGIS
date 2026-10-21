@@ -93,8 +93,34 @@ async def _make_client(tmp_path: Path, monkeypatch, env_overrides: dict[str, str
     async with application.router.lifespan_context(application):
         async with AsyncClient(transport=transport, base_url="http://test") as c:
             yield c
+        # Stopping the runner cancels the job tasks but not their engine threads,
+        # so a test that only enqueues jobs would leave GDAL writing while the next
+        # test rewrites os.environ, which can segfault on Linux. Drain them first.
+        await _wait_for_jobs_to_settle()
     await dispose_engine()
     get_settings.cache_clear()
+
+
+async def _wait_for_jobs_to_settle(timeout_s: float = 30.0) -> None:
+    import anyio
+    from sqlalchemy import func, select
+
+    from app.db.models import AnalysisJobRow
+    from app.db.session import session_scope
+
+    with anyio.move_on_after(timeout_s):
+        while True:
+            async with session_scope() as session:
+                active = (
+                    await session.execute(
+                        select(func.count())
+                        .select_from(AnalysisJobRow)
+                        .where(AnalysisJobRow.status.in_(("queued", "running")))
+                    )
+                ).scalar_one()
+            if not active:
+                return
+            await anyio.sleep(0.05)
 
 
 @pytest_asyncio.fixture
