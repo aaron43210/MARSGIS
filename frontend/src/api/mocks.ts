@@ -176,7 +176,7 @@ function provenance(): Provenance {
     job_id: r.job_id,
     observation_id: r.observation_id,
     reference_id: r.reference_id,
-    engine_image: 'ghcr.io/marsgis/marsgis-engine:offline-mock',
+    engine_image: 'ghcr.io/aaron43210/marsgis-engine:offline-mock',
     engine_version: '0.0.0-mock',
     software: [{ name: 'marsgis-engine', version: '0.0.0-mock' }],
     source_ids: [r.observation_id, r.reference_id],

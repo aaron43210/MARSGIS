@@ -41,8 +41,8 @@ dev = [
 marsgis-engine = "marsgis_engine.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/marsgis/marsgis"
-Source = "https://github.com/marsgis/marsgis"
+Homepage = "https://github.com/aaron43210/MARSGIS"
+Source = "https://github.com/aaron43210/MARSGIS"
 
 [tool.setuptools.dynamic]
 version = {attr = "marsgis_engine._version.__version__"}

@@ -23,7 +23,6 @@ keywords:
   - Nili Fossae
   - planetary science
 license: MIT
-repository-code: "https://github.com/marsgis/marsgis"
-# version and doi are filled from the release tag / first Zenodo mint.
+repository-code: "https://github.com/aaron43210/MARSGIS"
+# version is set from the release tag; add doi once Zenodo mints one.
 version: 0.0.0
-doi: 10.5281/zenodo.0000000

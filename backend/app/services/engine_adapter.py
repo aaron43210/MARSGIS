@@ -5,7 +5,7 @@
 - ``inprocess`` (dev/CI default): ``import marsgis_engine`` and call ``run_sam``.
 - ``subprocess``: shell out to the ``marsgis-engine`` CLI with CPU/memory rlimits
   and a wall-clock timeout (a hard process boundary for untrusted workloads).
-- ``container``: ``docker run`` the pinned ``ghcr.io/<owner>/marsgis-engine`` image.
+- ``container``: ``docker run`` the pinned ``ghcr.io/aaron43210/marsgis-engine`` image.
 
 All three return a uniform :class:`EngineResult`. The exact engine signatures
 live only here, so a change to the engine API touches one file.
