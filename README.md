@@ -1,87 +1,101 @@
 # MarsGIS
 
-[![CI](https://github.com/marsgis/marsgis/actions/workflows/ci.yml/badge.svg)](https://github.com/marsgis/marsgis/actions/workflows/ci.yml)
+[![CI](https://github.com/aaron43210/MARSGIS/actions/workflows/ci.yml/badge.svg)](https://github.com/aaron43210/MARSGIS/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Images: GHCR](https://img.shields.io/badge/images-GHCR-181717?logo=github)](https://github.com/orgs/marsgis/packages)
-[![DOI](https://img.shields.io/badge/DOI-pending-lightgrey.svg)](https://doi.org/10.5281/zenodo.0000000)
+[![npm: mars-globe](https://img.shields.io/npm/v/mars-globe?label=mars-globe)](https://www.npmjs.com/package/mars-globe)
 
-**MarsGIS** is an interactive Mars map/dashboard — a CesiumJS 3D Mars globe is the
-**primary product** — with an integrated hyperspectral analysis capability that
-runs the **Spectral Angle Mapper (SAM)** on CRISM MTRDR cubes.
+MarsGIS is a web GIS for Mars. It combines an interactive 3D globe built on CesiumJS with a
+hyperspectral analysis engine that runs the Spectral Angle Mapper (SAM) on CRISM MTRDR cubes.
+You can find a CRISM observation on the map, run SAM against a reference mineral spectrum, view
+the result as a map layer and download it with full provenance.
 
-> **Scientific integrity.** SAM outputs are **candidate spectral matches, never
-> confirmed mineral deposits.** The continuous spectral-angle raster is always
-> retained alongside any candidate mask, and the candidate caveat is a required
-> field on every result. The bundled offline sample is **synthetic** and is never
-> presented as a real archive detection.
+<p align="center">
+  <img src="packages/mars-globe/docs/screenshots/mode1-esm-viking.png" alt="3D Mars globe with the Viking colour mosaic" width="560">
+</p>
 
-## Quick start (containerized — Docker + the compose plugin only)
+> **Scientific integrity.** SAM produces *candidate spectral matches*, not confirmed mineral
+> deposits. Every result keeps the continuous spectral-angle raster next to the candidate mask
+> and carries a required caveat. The bundled offline sample is synthetic and is labelled as such.
 
-```bash
-cp .env.example .env     # edit secrets (POSTGRES_PASSWORD, SECRET_KEY) for anything non-local
-make up                  # builds + starts db (PostGIS) + backend + frontend
-```
+## Quick start
 
-Then open:
-
-- **Frontend (the app):** http://127.0.0.1:8080
-- **Backend API:** http://127.0.0.1:8000  (health: `/api/health`, docs: `/docs`)
-
-Stop with `make down`. See `make help` for all tasks.
-
-### Optional services (compose profiles)
+Requires Docker with the Compose plugin.
 
 ```bash
-docker compose --profile worker up -d    # redis + arq worker (JOB_BACKEND=arq)
-docker compose --profile tiles  up -d    # titiler sidecar (scale-out tiling)
-make engine-run-sample                   # run SAM on the bundled SYNTHETIC sample
+cp .env.example .env     # change POSTGRES_PASSWORD and SECRET_KEY for anything non-local
+make up                  # builds and starts PostGIS, the backend and the frontend
 ```
 
-The default job path is an **in-process** async worker (no extra infra); the
-`worker` profile switches to arq + Redis.
+- App: http://127.0.0.1:8080
+- API: http://127.0.0.1:8000 (health at `/api/health`, interactive docs at `/docs`)
 
-## Architecture at a glance
+Stop with `make down`; `make help` lists every task.
 
-| Service    | Image                                | Role                                               |
-| ---------- | ------------------------------------ | -------------------------------------------------- |
-| `frontend` | `ghcr.io/<owner>/marsgis-frontend`   | React 19 + Vite 7 + CesiumJS SPA, served by nginx  |
-| `backend`  | `ghcr.io/<owner>/marsgis-backend`    | FastAPI: catalogue, SAM jobs, on-the-fly tiling    |
-| `engine`   | `ghcr.io/<owner>/marsgis-engine`     | Standalone `marsgis-engine` SAM CLI / Python API   |
-| `db`       | `postgis/postgis:17-3.5`             | PostGIS (production path; SQLite is the dev default)|
+Optional services:
 
-- **Database:** zero-setup **SQLite** by default; **PostgreSQL + PostGIS** in
-  production, selected by `DATABASE_URL`.
-- **Images:** multi-stage, non-root (uid 10001); Python pinned to **3.12**, Node
-  pinned to **24** (see `docs/DEVELOPMENT.md` for the pin rationale).
+```bash
+docker compose --profile worker up -d    # Redis + arq worker (JOB_BACKEND=arq)
+docker compose --profile tiles  up -d    # titiler sidecar for scaled-out tiling
+make engine-run-sample                   # run SAM on the bundled synthetic sample
+```
 
-## Non-Docker development
+## Components
 
-Requires **Node 24** and **Python 3.12** (the host may run newer — install a 3.12
-interpreter via `uv`/`pyenv`). See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+| Component | Stack | Role |
+| --------- | ----- | ---- |
+| `frontend/` | React 19, Vite 7, CesiumJS | The map application, served by nginx |
+| `backend/` | FastAPI, SQLModel, rio-tiler | Catalogue, analysis jobs, on-the-fly result tiles |
+| `engine/` | Python, numpy, rasterio | Standalone SAM engine: Python API, CLI and Docker image |
+| `packages/mars-globe/` | TypeScript, CesiumJS | Reusable 3D Mars globe, [published on npm](https://www.npmjs.com/package/mars-globe) |
 
-## Security note (please read before exposing anything)
+The backend uses SQLite by default and PostgreSQL + PostGIS in production, selected by
+`DATABASE_URL`. Jobs run in-process by default or on arq + Redis. See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design.
 
-The dev `docker compose` stack is **unauthenticated** and binds **only
-`127.0.0.1`**. Do **not** deploy it as-is on a shared network. A real deployment
-needs authentication, TLS termination, and a reverse proxy / gateway in front of
-the backend. Abuse limits on the open analysis endpoint are configurable in `.env`.
+### mars-globe
 
-## Data & attribution
+The Cesium Mars setup is also available on its own:
 
-NASA source data is **fetched via services at runtime and is not redistributed**
-in this repository. Courtesy of NASA/JPL-Caltech/JHUAPL (CRISM/MRO), NASA/GSFC
-(MOLA), USGS/NASA (Viking MDIM21), and NASA Mars Trek (basemaps). Full details
-and the scientific-integrity disclaimer are in
-[`docs/DATA_LICENSES.md`](docs/DATA_LICENSES.md).
+```bash
+npm install mars-globe cesium
+```
+
+```js
+import { createMarsGlobe } from 'mars-globe';
+createMarsGlobe('map', { defaultBasemap: 'viking' });
+```
+
+See [packages/mars-globe](packages/mars-globe/README.md).
+
+## Development without Docker
+
+Requires Node 24 and Python 3.12. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
+## Security
+
+The development Compose stack is unauthenticated and binds only to `127.0.0.1`. Before exposing
+it, enable `REQUIRE_API_KEY`, terminate TLS and put a reverse proxy in front of the backend. See
+[SECURITY.md](SECURITY.md) for reporting vulnerabilities.
+
+## Data and attribution
+
+NASA data is fetched from public services at runtime and is not redistributed here. Courtesy of
+NASA/JPL-Caltech/JHUAPL (CRISM/MRO), NASA/GSFC (MOLA), USGS/NASA (Viking MDIM 2.1) and NASA Mars
+Trek. See [docs/DATA_LICENSES.md](docs/DATA_LICENSES.md).
 
 ## Documentation
 
-- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — dev setup, Python/Node pins, engine CLI, DB switch.
-- [`docs/RELEASING.md`](docs/RELEASING.md) — SemVer, tag-driven release, Zenodo.
-- [`docs/DATA_LICENSES.md`](docs/DATA_LICENSES.md) — data provenance, licenses, disclaimer.
-- [`docker/README.md`](docker/README.md) — build-context convention, arm64 note, lockfiles.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): system design, contracts and data flow
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md): local setup, configuration and the engine CLI
+- [docs/RELEASING.md](docs/RELEASING.md): versioning and releases
+- [docs/evidence/](docs/evidence/): validation runs behind the 1.0.0 milestone
+- [CONTRIBUTING.md](CONTRIBUTING.md): how to contribute
+
+## Citation
+
+If you use MarsGIS in research, please cite it using [CITATION.cff](CITATION.cff).
 
 ## License
 
-Source code is [MIT](LICENSE). Bundled synthetic sample data is CC0; docs are
-CC-BY-4.0. See `docs/DATA_LICENSES.md`.
+Code is [MIT](LICENSE). The bundled synthetic sample data is CC0 and the documentation is
+CC-BY-4.0; see [docs/DATA_LICENSES.md](docs/DATA_LICENSES.md).

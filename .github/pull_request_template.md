@@ -11,7 +11,6 @@
 - [ ] **No bulk data committed** — only tiny synthetic sample fixtures (the
       pre-commit large-file guard blocks files > 256 KB).
 - [ ] No secrets committed (`.env` stays local; `.env.example` is the template).
-- [ ] Claims are labeled **VERIFIED** vs **ASSUMED** where it matters.
 - [ ] Scientific integrity: no candidate spectral match is presented as a
       confirmed mineral deposit; synthetic/sample data is labeled SYNTHETIC.
 - [ ] SemVer impact noted (patch / minor / major) and commits follow
