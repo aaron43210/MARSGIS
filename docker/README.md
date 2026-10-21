@@ -39,9 +39,10 @@ volume (`make clean` / `docker compose down -v`) re-runs it on the next `up`.
 
 ## Apple Silicon (arm64) note
 
-`postgis/postgis:17-3.5` is published for `linux/amd64`. On an arm64 Mac it runs
-under emulation (slower, but Postgres is not performance-critical locally). For a
-**native arm64** image, swap the `db` image in `docker-compose.yml`:
+`postgis/postgis:17-3.5` is published for `linux/amd64` only, so the `db` service
+sets `platform: linux/amd64` and runs under emulation on an arm64 Mac (slower, but
+Postgres is not performance-critical locally). For a **native arm64** image, swap
+the `db` image in `docker-compose.yml` and remove the `platform` line:
 
 ```yaml
   db:

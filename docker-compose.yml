@@ -15,7 +15,9 @@ x-restart-policy: &restart unless-stopped
 
 services:
   db:
-    image: postgis/postgis:17-3.5 # arm64 (Apple Silicon): see docker/README.md (imresamu/postgis swap)
+    image: postgis/postgis:17-3.5
+    # Published for amd64 only; emulated on Apple Silicon (see docker/README.md).
+    platform: linux/amd64
     restart: *restart
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-marsgis}
@@ -38,7 +40,7 @@ services:
       context: ./backend
       args:
         PYTHON_VERSION: "3.12"
-    image: ghcr.io/${GHCR_OWNER:-marsgis}/marsgis-backend:${TAG:-dev}
+    image: ghcr.io/${GHCR_OWNER:-aaron43210}/marsgis-backend:${TAG:-dev}
     restart: *restart
     env_file:
       - path: .env
@@ -71,13 +73,15 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      # Repo root, because the image also builds packages/mars-globe.
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         NODE_VERSION: "24"
         VITE_API_URL: "/"
         VITE_DEFAULT_BASEMAP: ${VITE_DEFAULT_BASEMAP:-viking}
         VITE_USE_MOCKS: ${VITE_USE_MOCKS:-false}
-    image: ghcr.io/${GHCR_OWNER:-marsgis}/marsgis-frontend:${TAG:-dev}
+    image: ghcr.io/${GHCR_OWNER:-aaron43210}/marsgis-frontend:${TAG:-dev}
     restart: *restart
     environment:
       BACKEND_UPSTREAM: http://backend:8000
@@ -102,7 +106,7 @@ services:
       context: ./engine
       args:
         PYTHON_VERSION: "3.12"
-    image: ghcr.io/${GHCR_OWNER:-marsgis}/marsgis-engine:${TAG:-dev}
+    image: ghcr.io/${GHCR_OWNER:-aaron43210}/marsgis-engine:${TAG:-dev}
     restart: "no"
     profiles: ["engine"]
     volumes:
@@ -129,7 +133,7 @@ services:
       context: ./backend
       args:
         PYTHON_VERSION: "3.12"
-    image: ghcr.io/${GHCR_OWNER:-marsgis}/marsgis-backend:${TAG:-dev}
+    image: ghcr.io/${GHCR_OWNER:-aaron43210}/marsgis-backend:${TAG:-dev}
     restart: *restart
     profiles: ["worker"]
     env_file:
