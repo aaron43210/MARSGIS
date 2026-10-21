@@ -15,9 +15,9 @@ export function Legend({ legend }: { legend: LegendType }): React.ReactElement {
         <>
           <div className="legend-bar" style={{ background: stopsToCssGradient(legend.stops) }} />
           <div className="legend-labels">
-            <span>{range ? range[0] : legend.stops[0]?.value ?? ''}</span>
+            <span>{range ? range[0] : (legend.stops[0]?.value ?? '')}</span>
             {legend.units ? <span>{legend.units}</span> : null}
-            <span>{range ? range[1] : legend.stops.at(-1)?.value ?? ''}</span>
+            <span>{range ? range[1] : (legend.stops.at(-1)?.value ?? '')}</span>
           </div>
         </>
       ) : (

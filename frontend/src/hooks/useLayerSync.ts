@@ -66,7 +66,11 @@ export function attachStoreToCesium(managers: CesiumManagers): () => void {
     if (state.observations !== prevObservations) {
       footprintLayer.load(state.observations);
       // Auto-centre and fly to encompass observations when first loaded
-      if (prevObservations.length === 0 && state.observations.length > 0 && !state.selectedObservationId) {
+      if (
+        prevObservations.length === 0 &&
+        state.observations.length > 0 &&
+        !state.selectedObservationId
+      ) {
         footprintLayer.flyToAllObservations(2.2);
       }
       prevObservations = state.observations;
@@ -101,7 +105,11 @@ export function attachStoreToCesium(managers: CesiumManagers): () => void {
       state.overlayVisible !== prevVisible ||
       state.overlayOpacity !== prevOpacity
     ) {
-      void resultOverlay.setResult(active?.map_layer ?? null, state.overlayVisible, state.overlayOpacity);
+      void resultOverlay.setResult(
+        active?.map_layer ?? null,
+        state.overlayVisible,
+        state.overlayOpacity,
+      );
       prevResultId = activeId;
       prevVisible = state.overlayVisible;
       prevOpacity = state.overlayOpacity;

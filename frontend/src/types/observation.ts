@@ -1,7 +1,7 @@
 // MarsGIS shared contract — observations & datasets.
 // contract_version: 1.0.0
-import type { BBox, Footprint, ISODateTime, LonLat, UrlString } from "./common";
-import type { DatasetKind, InstrumentType, ProductType, ServiceType } from "./enums";
+import type { BBox, Footprint, ISODateTime, LonLat, UrlString } from './common';
+import type { DatasetKind, InstrumentType, ProductType, ServiceType } from './enums';
 
 /** Per-detector wavelength coverage. */
 export interface WavelengthRange {
@@ -15,7 +15,7 @@ export interface SpectralSummary {
   band_count: number;
   wavelength_min_nm: number;
   wavelength_max_nm: number;
-  wavelength_unit: "nm";
+  wavelength_unit: 'nm';
   sampling_nm: number | null;
   ranges: WavelengthRange[];
 }
@@ -76,7 +76,7 @@ export interface ObservationSummary {
 
 /** Full observation record. */
 export interface Observation extends ObservationSummary {
-  target: "Mars";
+  target: 'Mars';
   dataset_id: string | null;
   spectral: SpectralSummary | null;
   quality: QualityFlags;

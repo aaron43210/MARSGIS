@@ -19,11 +19,11 @@ export interface LonLat {
 
 /** GeoJSON geometry; coordinates are Mars degrees [lon, lat] (optionally with elevation). */
 export interface GeoJSONPolygon {
-  type: "Polygon";
+  type: 'Polygon';
   coordinates: number[][][];
 }
 export interface GeoJSONMultiPolygon {
-  type: "MultiPolygon";
+  type: 'MultiPolygon';
   coordinates: number[][][][];
 }
 export type Footprint = GeoJSONPolygon | GeoJSONMultiPolygon;

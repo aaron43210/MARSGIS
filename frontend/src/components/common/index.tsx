@@ -35,7 +35,15 @@ export function IconButton({
 
 export function CrosshairIcon({ size = 14 }: { size?: number }): React.ReactElement {
   return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
       <circle cx="8" cy="8" r="5" />
       <path d="M8 1v3M8 12v3M1 8h3M12 8h3" strokeLinecap="round" />
     </svg>

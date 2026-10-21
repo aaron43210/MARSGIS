@@ -31,7 +31,11 @@ export function ResultsPanel(): React.ReactElement {
 
           <div className="layer-row">
             <Toggle checked={overlayVisible} onChange={setOverlayVisible} label="Overlay" />
-            <OpacitySlider value={overlayOpacity} onChange={setOverlayOpacity} label="Overlay opacity" />
+            <OpacitySlider
+              value={overlayOpacity}
+              onChange={setOverlayOpacity}
+              label="Overlay opacity"
+            />
           </div>
 
           <Legend legend={result.legend} />

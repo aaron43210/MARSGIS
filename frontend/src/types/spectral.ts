@@ -1,7 +1,7 @@
 // MarsGIS shared contract — spectral reference library ("minerals").
 // contract_version: 1.0.0
-import type { ISODateTime } from "./common";
-import type { MineralClass, SpectrumType } from "./enums";
+import type { ISODateTime } from './common';
+import type { MineralClass, SpectrumType } from './enums';
 
 /** Lightweight reference entry (no sample arrays) for GET /api/minerals. */
 export interface SpectralReferenceSummary {
@@ -24,7 +24,7 @@ export interface SpectralReferenceSummary {
 
 /** Full reference spectrum (with sample arrays) for GET /api/minerals/{id}. */
 export interface SpectralReference extends SpectralReferenceSummary {
-  wavelength_unit: "nm";
+  wavelength_unit: 'nm';
   /** Ascending; same length as `reflectance`. */
   wavelength: number[];
   /** Unitless reflectance (or continuum-removed) aligned to `wavelength`. */

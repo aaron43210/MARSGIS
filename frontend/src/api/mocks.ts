@@ -106,7 +106,12 @@ function nowISO(): string {
   return new Date().toISOString();
 }
 
-function createMockJob(body: { observation_id: string; reference_id: string; algorithm: string; params?: Partial<SamParams> }): AnalysisJob {
+function createMockJob(body: {
+  observation_id: string;
+  reference_id: string;
+  algorithm: string;
+  params?: Partial<SamParams>;
+}): AnalysisJob {
   jobCounterSeed += 1;
   const id = `mock-job-${jobCounterSeed}`;
   const job: AnalysisJob = {
@@ -161,7 +166,11 @@ function health(): HealthResponse {
     components: {
       db: { status: 'ok', detail: 'mock fixtures', latency_ms: 0 },
       engine: { status: 'ok', detail: 'offline mock', latency_ms: 0 },
-      tiler: { status: 'degraded', detail: 'single-image overlay only (offline)', latency_ms: null },
+      tiler: {
+        status: 'degraded',
+        detail: 'single-image overlay only (offline)',
+        latency_ms: null,
+      },
       queue: { status: 'ok', detail: 'inprocess mock', latency_ms: 0 },
     },
     implemented_algorithms: ['SAM'],

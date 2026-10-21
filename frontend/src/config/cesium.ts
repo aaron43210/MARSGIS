@@ -12,4 +12,3 @@ export {
   applyMarsScene as applyMarsSceneTweaks,
   MARS_RADII,
 } from 'mars-globe';
-

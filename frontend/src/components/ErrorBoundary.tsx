@@ -38,8 +38,18 @@ export class ErrorBoundary extends Component<Props, State> {
     const { children, fallback } = this.props;
 
     if (error) {
-      if (fallback) return fallback(error, () => { this.reset(); });
-      return <DefaultFallback error={error} reset={() => { this.reset(); }} />;
+      if (fallback)
+        return fallback(error, () => {
+          this.reset();
+        });
+      return (
+        <DefaultFallback
+          error={error}
+          reset={() => {
+            this.reset();
+          }}
+        />
+      );
     }
     return children;
   }
@@ -47,30 +57,55 @@ export class ErrorBoundary extends Component<Props, State> {
 
 function DefaultFallback({ error, reset }: { error: Error; reset: () => void }) {
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: '#05070b', color: '#e2e8f0',
-      fontFamily: 'system-ui, sans-serif', padding: '2rem', textAlign: 'center',
-      gap: '1rem',
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#05070b',
+        color: '#e2e8f0',
+        fontFamily: 'system-ui, sans-serif',
+        padding: '2rem',
+        textAlign: 'center',
+        gap: '1rem',
+      }}
+    >
       <h1 style={{ color: '#f87171', margin: 0, fontSize: '1.4rem' }}>Mars Globe Failed to Load</h1>
       <p style={{ color: '#94a3b8', maxWidth: '520px', margin: 0, lineHeight: 1.6 }}>
-        The Cesium 3D globe encountered an error during initialization.
-        Check the browser console (F12) for details.
+        The Cesium 3D globe encountered an error during initialization. Check the browser console
+        (F12) for details.
       </p>
-      <pre style={{
-        background: '#0f1117', color: '#fca5a5', padding: '1rem',
-        borderRadius: '8px', fontSize: '0.75rem', maxWidth: '600px',
-        overflowX: 'auto', textAlign: 'left', border: '1px solid #7f1d1d',
-      }}>
+      <pre
+        style={{
+          background: '#0f1117',
+          color: '#fca5a5',
+          padding: '1rem',
+          borderRadius: '8px',
+          fontSize: '0.75rem',
+          maxWidth: '600px',
+          overflowX: 'auto',
+          textAlign: 'left',
+          border: '1px solid #7f1d1d',
+        }}
+      >
         {error.message}
       </pre>
-      <button onClick={reset} style={{
-        background: '#7c3f25', color: '#fff', border: 'none',
-        padding: '0.6rem 1.4rem', borderRadius: '8px', cursor: 'pointer',
-        fontSize: '0.9rem', marginTop: '0.5rem',
-      }}>
+      <button
+        onClick={reset}
+        style={{
+          background: '#7c3f25',
+          color: '#fff',
+          border: 'none',
+          padding: '0.6rem 1.4rem',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          fontSize: '0.9rem',
+          marginTop: '0.5rem',
+        }}
+      >
         Retry
       </button>
     </div>

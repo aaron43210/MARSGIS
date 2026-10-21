@@ -12,7 +12,8 @@ export function SamParams(): React.ReactElement {
   return (
     <div className="field">
       <span>
-        Detection threshold: <strong>{thresholdDeg.toFixed(2)}°</strong> ({thresholdRad.toFixed(3)} rad)
+        Detection threshold: <strong>{thresholdDeg.toFixed(2)}°</strong> ({thresholdRad.toFixed(3)}{' '}
+        rad)
       </span>
       <input
         type="range"
