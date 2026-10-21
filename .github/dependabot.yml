@@ -1,52 +1,73 @@
 version: 2
+# Monthly, grouped updates: at most one minor/patch PR and one major PR per
+# ecosystem. The frontend toolchain is pinned on purpose (see docs/DEVELOPMENT.md),
+# so its major versions are upgraded by hand rather than by Dependabot.
 updates:
-  # Frontend npm deps.
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript-eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       frontend-minor-patch:
         update-types: ["minor", "patch"]
+      frontend-major:
+        update-types: ["major"]
 
-  # Backend Python deps.
   - package-ecosystem: "pip"
     directory: "/backend"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    open-pull-requests-limit: 3
     groups:
       backend-minor-patch:
         update-types: ["minor", "patch"]
+      backend-major:
+        update-types: ["major"]
 
-  # Engine Python deps.
   - package-ecosystem: "pip"
     directory: "/engine"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    open-pull-requests-limit: 3
     groups:
       engine-minor-patch:
         update-types: ["minor", "patch"]
+      engine-major:
+        update-types: ["major"]
 
-  # Base images in the per-service Dockerfiles.
   - package-ecosystem: "docker"
     directories:
       - "/engine"
       - "/backend"
       - "/frontend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       docker-images:
         update-types: ["minor", "patch"]
 
-  # GitHub Actions.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       actions:
-        update-types: ["minor", "patch"]
+        patterns: ["*"]
