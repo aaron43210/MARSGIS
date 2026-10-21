@@ -34,7 +34,7 @@ ENV VITE_API_URL=${VITE_API_URL} \
 RUN npm run build
 
 # ----------------------------------------------------------------------------
-FROM nginxinc/nginx-unprivileged:1.27-alpine AS serve
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS serve
 LABEL org.opencontainers.image.title="marsgis-frontend" \
       org.opencontainers.image.description="MarsGIS React + CesiumJS single-page app served by nginx" \
       org.opencontainers.image.licenses="MIT" \
