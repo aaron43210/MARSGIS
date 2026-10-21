@@ -54,7 +54,6 @@ function DefaultFallback({ error, reset }: { error: Error; reset: () => void }) 
       fontFamily: 'system-ui, sans-serif', padding: '2rem', textAlign: 'center',
       gap: '1rem',
     }}>
-      <div style={{ fontSize: '3rem' }}>🔴</div>
       <h1 style={{ color: '#f87171', margin: 0, fontSize: '1.4rem' }}>Mars Globe Failed to Load</h1>
       <p style={{ color: '#94a3b8', maxWidth: '520px', margin: 0, lineHeight: 1.6 }}>
         The Cesium 3D globe encountered an error during initialization.
