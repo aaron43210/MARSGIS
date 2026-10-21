@@ -55,15 +55,25 @@ export const BASEMAPS: Record<BasemapId, BasemapDef> = {
   },
 };
 
+function getBasemap(id: BasemapId): BasemapDef {
+  const b = Object.prototype.hasOwnProperty.call(BASEMAPS, id) ? BASEMAPS[id] : undefined;
+  if (!b) {
+    throw new Error(
+      `[mars-globe] Unknown basemap "${String(id)}". Expected one of: ${Object.keys(BASEMAPS).join(', ')}.`,
+    );
+  }
+  return b;
+}
+
 /** The URL template for one basemap ({z}/{y}/{x} = TileMatrix/Row/Col). */
 export function basemapUrl(id: BasemapId): string {
-  const b = BASEMAPS[id];
+  const b = getBasemap(id);
   return `${TREK}/${b.product}/1.0.0//default/default028mm/{z}/{y}/{x}.${b.ext}`;
 }
 
 /** Build a Cesium ImageryProvider for a Mars Trek basemap on the geographic grid. */
 export function basemapProvider(id: BasemapId): UrlTemplateImageryProvider {
-  const b = BASEMAPS[id];
+  const b = getBasemap(id);
   return new UrlTemplateImageryProvider({
     url: basemapUrl(id),
     tilingScheme: new GeographicTilingScheme({

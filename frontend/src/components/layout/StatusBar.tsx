@@ -35,17 +35,24 @@ export function StatusBar(): React.ReactElement {
     return () => clearTimeout(timer);
   }, [lon, lat]);
 
-  const elevText =
-    !hover ? '—' : elev === undefined ? '…' : elev === null ? '—' : `${Math.round(elev).toLocaleString()} m`;
+  const elevText = !hover
+    ? '—'
+    : elev === undefined
+      ? '…'
+      : elev === null
+        ? '—'
+        : `${Math.round(elev).toLocaleString()} m`;
 
   return (
     <footer className="status-bar">
       <span>
-        Cursor:{' '}
-        <span className="mono">{hover ? formatLonLat(hover.lon, hover.lat) : '—'}</span>
+        Cursor: <span className="mono">{hover ? formatLonLat(hover.lon, hover.lat) : '—'}</span>
       </span>
       <span>
-        Elev: <span className="mono" title="MOLA 463 m global DEM">{elevText}</span>
+        Elev:{' '}
+        <span className="mono" title="MOLA 463 m global DEM">
+          {elevText}
+        </span>
       </span>
       <span>
         Camera: <span className="mono">{formatKm(height)}</span>
@@ -57,7 +64,9 @@ export function StatusBar(): React.ReactElement {
         CRS: <span className="mono">Mars IAU 2000 (east-positive)</span>
       </span>
       {hasResult ? (
-        <span className="caveat-chip">⚠ Candidate spectral matches only — not confirmed deposits</span>
+        <span className="caveat-chip">
+          ⚠ Candidate spectral matches only — not confirmed deposits
+        </span>
       ) : null}
     </footer>
   );

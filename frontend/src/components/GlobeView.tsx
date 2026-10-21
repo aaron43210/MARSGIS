@@ -31,7 +31,12 @@ export function GlobeView(): React.ReactElement {
     const footprintLayer = new FootprintLayer(viewer);
     const resultOverlay = new ResultOverlay(viewer);
 
-    const detachStore = attachStoreToCesium({ viewer, layerManager, footprintLayer, resultOverlay });
+    const detachStore = attachStoreToCesium({
+      viewer,
+      layerManager,
+      footprintLayer,
+      resultOverlay,
+    });
     const detachPicking = installPicking(viewer, store, footprintLayer);
 
     // Start camera pulled back in outer space to create a stunning planetary zoom-in experience.
@@ -49,7 +54,11 @@ export function GlobeView(): React.ReactElement {
     const introTimer = setTimeout(() => {
       if (!viewer.isDestroyed()) {
         viewer.camera.flyTo({
-          destination: Cartesian3.fromDegrees(cam.lon, cam.lat, Math.max(Math.min(cam.height, 3_500_000), 1_800_000)),
+          destination: Cartesian3.fromDegrees(
+            cam.lon,
+            cam.lat,
+            Math.max(Math.min(cam.height, 3_500_000), 1_800_000),
+          ),
           duration: 2.2,
           complete: () => viewer.scene.requestRender(),
         });
@@ -87,5 +96,7 @@ export function GlobeView(): React.ReactElement {
     };
   }, []);
 
-  return <div className="globe-root" ref={containerRef} aria-label="Mars globe" role="application" />;
+  return (
+    <div className="globe-root" ref={containerRef} aria-label="Mars globe" role="application" />
+  );
 }

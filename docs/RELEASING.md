@@ -34,8 +34,8 @@ settings. Confirm `GHCR_OWNER` (defaults to the repository owner's login).
 ### Verifying a published image
 
 ```bash
-docker buildx imagetools inspect ghcr.io/<owner>/marsgis-engine:1.2.3
-gh attestation verify oci://ghcr.io/<owner>/marsgis-engine:1.2.3 --owner <owner>
+docker buildx imagetools inspect ghcr.io/aaron43210/marsgis-engine:1.2.3
+gh attestation verify oci://ghcr.io/aaron43210/marsgis-engine:1.2.3 --owner aaron43210
 ```
 
 ## Zenodo archiving
@@ -51,7 +51,7 @@ GitHub Release is archived automatically and minted a DOI. After the first mint:
 A classification **run** should be archived as a separate Zenodo deposition that
 records, at minimum:
 
-- the **engine image digest** used (`ghcr.io/<owner>/marsgis-engine@sha256:…`),
+- the **engine image digest** used (`ghcr.io/aaron43210/marsgis-engine@sha256:…`),
 - the **CRISM observation id** processed,
 - the **MICA reference** mineral used and SAM parameters,
 - the provenance JSON emitted by the engine.

@@ -1,6 +1,6 @@
 // MarsGIS shared contract — health, query params, response envelopes, routes.
 // contract_version: 1.0.0
-import type { BBox, Paginated } from "./common";
+import type { BBox, Paginated } from './common';
 import type {
   AssetRole,
   AvailabilityStatus,
@@ -10,11 +10,11 @@ import type {
   LayerType,
   MineralClass,
   ProductType,
-} from "./enums";
-import type { AnalysisJob } from "./analysis";
-import type { MapLayer } from "./layer";
-import type { ObservationSummary } from "./observation";
-import type { SpectralReferenceSummary } from "./spectral";
+} from './enums';
+import type { AnalysisJob } from './analysis';
+import type { MapLayer } from './layer';
+import type { ObservationSummary } from './observation';
+import type { SpectralReferenceSummary } from './spectral';
 
 export interface HealthComponent {
   status: HealthStatus;
@@ -46,7 +46,7 @@ export interface ObservationQuery {
   q?: string;
   limit?: number; // default 50, max 200
   offset?: number;
-  sort?: "acquired_at" | "-acquired_at" | "id" | "resolution_m" | "-resolution_m";
+  sort?: 'acquired_at' | '-acquired_at' | 'id' | 'resolution_m' | '-resolution_m';
 }
 export interface MineralQuery {
   class?: MineralClass;
@@ -85,15 +85,15 @@ export interface ResultDownloadParams {
   asset?: AssetRole; // default "primary_metric" (cog)
 }
 
-export const API_PREFIX = "/api";
+export const API_PREFIX = '/api';
 export const API_ROUTES = {
-  health: "/api/health",
-  layers: "/api/layers",
-  observations: "/api/observations",
+  health: '/api/health',
+  layers: '/api/layers',
+  observations: '/api/observations',
   observation: (id: string) => `/api/observations/${id}`,
-  minerals: "/api/minerals",
+  minerals: '/api/minerals',
   mineral: (id: string) => `/api/minerals/${id}`,
-  analysisJobs: "/api/analysis-jobs",
+  analysisJobs: '/api/analysis-jobs',
   analysisJob: (id: string) => `/api/analysis-jobs/${id}`,
   result: (id: string) => `/api/results/${id}`,
   resultDownload: (id: string) => `/api/results/${id}/download`,

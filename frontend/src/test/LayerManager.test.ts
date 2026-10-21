@@ -54,7 +54,11 @@ class FakeCollection implements IImageryLayers {
   }
 }
 
-function makeViewer(): { viewer: ILayerManagerViewer; coll: FakeCollection; render: ReturnType<typeof vi.fn> } {
+function makeViewer(): {
+  viewer: ILayerManagerViewer;
+  coll: FakeCollection;
+  render: ReturnType<typeof vi.fn>;
+} {
   const coll = new FakeCollection();
   const render = vi.fn();
   const viewer: ILayerManagerViewer = { imageryLayers: coll, scene: { requestRender: render } };

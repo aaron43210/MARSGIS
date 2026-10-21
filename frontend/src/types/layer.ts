@@ -1,7 +1,7 @@
 // MarsGIS shared contract — map layers, tile sources, legends (the display contract).
 // contract_version: 1.0.0
-import type { BBox, ISODateTime, UrlString } from "./common";
-import type { AvailabilityStatus, LayerType, LegendType, TileOrder, TilingScheme } from "./enums";
+import type { BBox, ISODateTime, UrlString } from './common';
+import type { AvailabilityStatus, LayerType, LegendType, TileOrder, TilingScheme } from './enums';
 
 /**
  * Tile/service source for a layer.
@@ -14,7 +14,7 @@ export interface LayerSource {
   tiling_scheme: TilingScheme;
   tile_order: TileOrder;
   tile_size: number; // 256
-  file_extension: "jpg" | "png";
+  file_extension: 'jpg' | 'png';
   level_zero_tiles_x: number; // 2 for geographic Mars
   level_zero_tiles_y: number; // 1 for geographic Mars
   min_zoom: number;

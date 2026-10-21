@@ -1,8 +1,8 @@
 // MarsGIS shared contract — analysis jobs & results.
 // contract_version: 1.0.0
-import type { BBox, ISODateTime } from "./common";
-import type { AnalysisAlgorithm, AssetRole, JobStatus } from "./enums";
-import type { Legend, MapLayer } from "./layer";
+import type { BBox, ISODateTime } from './common';
+import type { AnalysisAlgorithm, AssetRole, JobStatus } from './enums';
+import type { Legend, MapLayer } from './layer';
 
 /** SAM parameters. All optional on create (server applies defaults from contracts/enums.json). */
 export interface SamParams {

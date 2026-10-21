@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/node_modules/cesium/Build/Cesium/Widgets/widgets.css" />
+  <script>window.CESIUM_BASE_URL = '/node_modules/cesium/Build/Cesium/';</script>
+  <script type="importmap">
+    { "imports": { "cesium": "/node_modules/cesium/Build/Cesium/index.js", "mars-globe": "/dist/index.js" } }
+  </script>
+  <style>html, body, #map { margin: 0; width: 800px; height: 600px; }</style>
+</head>
+<body>
+  <div id="map"></div>
+  <script type="module">
+    // Modes 1 (createMarsGlobe) and 3 (setupMarsGlobe on an existing Viewer), native browser ESM.
+    import { Ellipsoid, Viewer } from 'cesium';
+    import { createMarsGlobe, installMarsEllipsoid, isMarsEllipsoidInstalled, setupMarsGlobe, MARS_RADII } from 'mars-globe';
+    const mode = new URLSearchParams(location.search).get('mode');
+    let viewer, globe;
+    if (mode === 'plugin') {
+      installMarsEllipsoid();
+      viewer = new Viewer('map', { baseLayer: false, geocoder: false, baseLayerPicker: false });
+      setupMarsGlobe(viewer, { basemap: 'mola' });
+    } else {
+      globe = createMarsGlobe('map', { defaultBasemap: 'viking' });
+      viewer = globe.viewer;
+    }
+    window.__test = {
+      viewer,
+      globe,
+      radius: () => viewer.scene.globe.ellipsoid.maximumRadius,
+      defaultRadius: () => Ellipsoid.default.maximumRadius,
+      installed: () => isMarsEllipsoidInstalled(),
+      expected: MARS_RADII.equatorial,
+      layers: () => viewer.imageryLayers.length,
+    };
+  </script>
+</body>
+</html>

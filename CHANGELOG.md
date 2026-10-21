@@ -20,4 +20,4 @@ derived from the git tag (`vX.Y.Z`); there is no hand-maintained VERSION file.
 - Scientific-integrity disclaimer surfaced throughout: a candidate spectral match
   is never presented as a confirmed mineral deposit.
 
-[Unreleased]: https://github.com/marsgis/marsgis/commits/master
+[Unreleased]: https://github.com/aaron43210/MARSGIS/commits/main

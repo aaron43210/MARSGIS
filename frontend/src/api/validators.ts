@@ -1,15 +1,7 @@
 // zod validators for the few network payloads the Cesium render path depends on.
-// Pattern: validate structure, then return the ORIGINAL object typed as the frozen contract
-// type (so we never silently drop contract fields we don't explicitly validate).
-//
 // zod's default object behaviour strips unknown keys (it does not reject them), so these schemas
 // stay tolerant of additive backend changes while still catching missing/malformed critical fields.
 import { z } from 'zod';
-
-export function validate<T>(schema: z.ZodType, data: unknown): T {
-  schema.parse(data);
-  return data as T;
-}
 
 const zNumberArray = z.array(z.number());
 const zBBox = z.tuple([z.number(), z.number(), z.number(), z.number()]);

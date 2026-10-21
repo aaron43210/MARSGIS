@@ -33,7 +33,7 @@ services:
 
   # Lightweight DB inspector on 127.0.0.1:8081 (dev only).
   adminer:
-    image: adminer:4
+    image: adminer:5
     restart: unless-stopped
     environment:
       ADMINER_DEFAULT_SERVER: db

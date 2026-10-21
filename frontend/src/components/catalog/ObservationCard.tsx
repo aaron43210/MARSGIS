@@ -29,8 +29,7 @@ export function ObservationCard({ obs }: { obs: ObservationSummary }): React.Rea
       }}
     >
       <div className="title">
-        {obs.id}{' '}
-        {!obs.analysis_suitable ? <Badge>not suitable</Badge> : null}
+        {obs.id} {!obs.analysis_suitable ? <Badge>not suitable</Badge> : null}
       </div>
       <div className="meta">{obs.title}</div>
       <div className="meta">

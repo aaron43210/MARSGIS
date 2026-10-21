@@ -46,4 +46,4 @@ truth for the published image tag `ghcr.io/<account>/marsgis-engine:<semver>`.
 - The ratioed-MICA vs un-ratioed-scene I/F mismatch is documented and partially
   mitigated (SAM albedo invariance + continuum removal + wavelength windowing).
 
-[0.1.0]: https://github.com/marsgis/marsgis/releases/tag/engine-v0.1.0
+[0.1.0]: https://github.com/aaron43210/MARSGIS/releases/tag/engine-v0.1.0

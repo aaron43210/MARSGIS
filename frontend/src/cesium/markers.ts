@@ -53,7 +53,11 @@ function removeFeatureMarker(viewer: Viewer): void {
 
 export function flyToFeature(viewer: Viewer, feature: GazetteerFeature): void {
   viewer.camera.flyTo({
-    destination: Cartesian3.fromDegrees(feature.lon, feature.lat, heightForFeature(feature.diameterKm)),
+    destination: Cartesian3.fromDegrees(
+      feature.lon,
+      feature.lat,
+      heightForFeature(feature.diameterKm),
+    ),
     duration: 1.4,
     complete: () => viewer.scene.requestRender(),
   });

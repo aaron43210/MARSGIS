@@ -1,7 +1,7 @@
 // MarsGIS shared contract — provenance (reproducibility record for a result).
 // contract_version: 1.0.0
-import type { ISODateTime } from "./common";
-import type { ProvenanceStepStatus } from "./enums";
+import type { ISODateTime } from './common';
+import type { ProvenanceStepStatus } from './enums';
 
 export interface SoftwareComponent {
   name: string; // "marsgis-engine" | "rasterio" | "spectral" | "numpy" | "GDAL" ...
