@@ -181,9 +181,12 @@ def main() -> int:
         },
     }
 
-    EVIDENCE.mkdir(parents=True, exist_ok=True)
-    (EVIDENCE / "A1_trek_alignment.json").write_text(json.dumps(record, indent=2) + "\n")
-    _write_md(record)
+    # An --offline run is a quick local check only: it must never overwrite the
+    # committed evidence, which records the live tile fetches.
+    if not args.offline:
+        EVIDENCE.mkdir(parents=True, exist_ok=True)
+        (EVIDENCE / "A1_trek_alignment.json").write_text(json.dumps(record, indent=2) + "\n")
+        _write_md(record)
 
     # Console summary.
     print(f"[A1] tiling math: {'PASS' if math_ok else 'FAIL'} ({len(math_checks)} checks)")
@@ -201,7 +204,10 @@ def main() -> int:
                     f"{r['tile']['y']}/{r['tile']['x']} "
                     f"[{r.get('status')}, {r.get('bytes')}B, {r.get('image_kind')}]"
                 )
-    print(f"[A1] evidence -> {EVIDENCE / 'A1_trek_alignment.json'}")
+    if args.offline:
+        print("[A1] offline run: evidence files left unchanged")
+    else:
+        print(f"[A1] evidence -> {EVIDENCE / 'A1_trek_alignment.json'}")
 
     # Fail only on a check that actually ran.
     if not math_ok:
