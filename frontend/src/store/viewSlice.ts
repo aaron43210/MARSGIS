@@ -1,5 +1,12 @@
 import type { AppSlice } from './createSlice';
-import type { CameraState, LeftPanelTab, Panels, RightPanelTab, ViewSlice, WorkspaceMode } from './types';
+import type {
+  CameraState,
+  LeftPanelTab,
+  Panels,
+  RightPanelTab,
+  ViewSlice,
+  WorkspaceMode,
+} from './types';
 import { DEFAULT_CAMERA } from '@/config/constants';
 import { env } from '@/env';
 import { DEFAULT_BASEMAP_ID } from '@/config/basemaps';

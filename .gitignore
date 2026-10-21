@@ -77,3 +77,6 @@ redis_data/
 
 # Local validation cube cache (never committed)
 .cache/
+
+# Independent local demo folder (never committed)
+EXAMPLE/

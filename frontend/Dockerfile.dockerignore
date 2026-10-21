@@ -1,0 +1,13 @@
+# Build context is the repo root (see docker-compose.yml); only the frontend
+# and the mars-globe package are needed.
+*
+!frontend/
+!packages/mars-globe/
+**/node_modules/
+**/dist/
+frontend/.vite/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+**/.DS_Store
+**/coverage/

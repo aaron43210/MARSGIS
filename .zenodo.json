@@ -15,8 +15,14 @@
     "planetary science"
   ],
   "creators": [
-    { "name": "Researcher, Student", "affiliation": "MSc capstone (placeholder)" },
-    { "name": "Name, Supervisor", "affiliation": "Supervisor (placeholder)" }
+    {
+      "name": "R, AARON",
+      "affiliation": "Digital University Kerala"
+    },
+    {
+      "name": "T, RADHAKRISHNAN",
+      "affiliation": "Digital University Kerala"
+    }
   ],
   "related_identifiers": [
     {

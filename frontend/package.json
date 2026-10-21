@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "format": "prettier --write src",
+    "format:check": "prettier --check src"
   },
   "dependencies": {
     "cesium": "1.146.0",
@@ -25,9 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.39.0",
-    "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
-    "@testing-library/react": "16.3.3",
     "@types/node": "24.3.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",

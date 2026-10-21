@@ -25,11 +25,72 @@
       "detail": "lat=\u00b190\u00b0 maps to a valid row at z0/3/6"
     }
   ],
-  "live_checks": [],
+  "live_checks": [
+    {
+      "feature": "Jezero crater",
+      "lon": 77.4,
+      "lat": 18.4,
+      "level": 4,
+      "tile": {
+        "x": 22,
+        "y": 6
+      },
+      "url": "https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0//default/default028mm/4/6/22.jpg",
+      "status": 200,
+      "bytes": 64157,
+      "image_kind": "jpeg",
+      "ok": true
+    },
+    {
+      "feature": "Gale crater",
+      "lon": 137.4,
+      "lat": -5.4,
+      "level": 4,
+      "tile": {
+        "x": 28,
+        "y": 8
+      },
+      "url": "https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0//default/default028mm/4/8/28.jpg",
+      "status": 200,
+      "bytes": 63413,
+      "image_kind": "jpeg",
+      "ok": true
+    },
+    {
+      "feature": "Olympus Mons",
+      "lon": -133.8,
+      "lat": 18.65,
+      "level": 4,
+      "tile": {
+        "x": 4,
+        "y": 6
+      },
+      "url": "https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0//default/default028mm/4/6/4.jpg",
+      "status": 200,
+      "bytes": 50457,
+      "image_kind": "jpeg",
+      "ok": true
+    },
+    {
+      "feature": "Nili Fossae",
+      "lon": 77.0,
+      "lat": 21.0,
+      "level": 4,
+      "tile": {
+        "x": 22,
+        "y": 6
+      },
+      "url": "https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0//default/default028mm/4/6/22.jpg",
+      "status": 200,
+      "bytes": 64157,
+      "image_kind": "jpeg",
+      "ok": true
+    }
+  ],
   "summary": {
     "math_ok": true,
-    "live_ran": 0,
+    "live_ran": 4,
     "live_skipped": 0,
-    "live_ok": null
+    "live_ok": true
   }
 }

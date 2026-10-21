@@ -20,9 +20,7 @@ export function SpectralAngleBadge({
         <span style={{ fontSize: 13 }}>
           SAM angle: <strong>{angleDeg != null ? formatDeg(angleDeg) : 'n/a'}</strong>
         </span>
-        {synthetic ? (
-          <span className="badge syn">SYNTHETIC (offline sample)</span>
-        ) : null}
+        {synthetic ? <span className="badge syn">SYNTHETIC (offline sample)</span> : null}
       </div>
       <div className="caveat" role="note">
         <strong>Candidate spectral match — not a confirmed mineral deposit. </strong>

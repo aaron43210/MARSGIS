@@ -46,7 +46,11 @@ export function DiscoverRegions(): React.ReactElement {
           </option>
         ))}
       </select>
-      <Button block disabled={status === 'loading'} onClick={() => void discover(region.bbox, region.label)}>
+      <Button
+        block
+        disabled={status === 'loading'}
+        onClick={() => void discover(region.bbox, region.label)}
+      >
         {status === 'loading' ? 'Fetching from NASA…' : `Fetch from NASA: ${region.label}`}
       </Button>
       {status === 'loading' ? <Spinner label="Querying PDS ODE" /> : null}
@@ -54,7 +58,9 @@ export function DiscoverRegions(): React.ReactElement {
       {status === 'ready' && last ? (
         <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
           Fetched {last.found} scene{last.found === 1 ? '' : 's'} in {last.label}.{' '}
-          {last.found > 0 ? 'Flew to the first — click any card or footprint.' : 'Try another region.'}
+          {last.found > 0
+            ? 'Flew to the first — click any card or footprint.'
+            : 'Try another region.'}
         </span>
       ) : null}
     </div>

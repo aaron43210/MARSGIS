@@ -31,7 +31,14 @@ async def run_analysis_job(ctx: dict[str, Any], job_id: str) -> None:
     adapter = ctx["engine_adapter"]
     settings = ctx["settings"]
     try:
-        await _run_analysis_job(job_id, adapter=adapter, settings=settings)
+        # A retry (job_try > 1) means the previous worker died mid-run and left
+        # the row ``running``; let this attempt reclaim it.
+        await _run_analysis_job(
+            job_id,
+            adapter=adapter,
+            settings=settings,
+            reclaim_running=int(ctx.get("job_try", 1)) > 1,
+        )
     except (asyncio.CancelledError, TimeoutError):
         from app.services.jobs.tasks import _fail_job
 

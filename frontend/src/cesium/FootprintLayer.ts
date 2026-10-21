@@ -137,7 +137,9 @@ export class FootprintLayer {
     if (!bbox) {
       const entity = this.dataSource.entities.getById(id);
       if (entity) {
-        void this.viewer.flyTo(entity, { duration: 1.2 }).then(() => this.viewer.scene.requestRender());
+        void this.viewer
+          .flyTo(entity, { duration: 1.2 })
+          .then(() => this.viewer.scene.requestRender());
       }
       return;
     }

@@ -7,7 +7,9 @@ export function ResultList(): React.ReactElement {
 
   const items = Object.values(results);
   if (items.length === 0) {
-    return <div style={{ color: 'var(--text-dim)', fontSize: 12 }}>No results yet. Run an analysis.</div>;
+    return (
+      <div style={{ color: 'var(--text-dim)', fontSize: 12 }}>No results yet. Run an analysis.</div>
+    );
   }
 
   return (

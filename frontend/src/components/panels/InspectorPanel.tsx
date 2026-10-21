@@ -31,10 +31,18 @@ export function InspectorPanel(): React.ReactElement {
   let xGrid: number[] = [];
   if (reference) {
     xGrid = reference.wavelength;
-    series.push({ label: `Reference: ${reference.mineral}`, color: reference.color || SERIES_COLORS.reference, y: reference.reflectance });
+    series.push({
+      label: `Reference: ${reference.mineral}`,
+      color: reference.color || SERIES_COLORS.reference,
+      y: reference.reflectance,
+    });
   }
   if (observed && reference && observed.wavelength_nm.length === reference.wavelength.length) {
-    series.push({ label: 'Observed pixel (synthetic)', color: SERIES_COLORS.observed, y: observed.reflectance });
+    series.push({
+      label: 'Observed pixel (synthetic)',
+      color: SERIES_COLORS.observed,
+      y: observed.reflectance,
+    });
   }
 
   return (

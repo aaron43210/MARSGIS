@@ -21,10 +21,14 @@ jobs:
         include:
           - name: engine
             context: ./engine
+            file: ./engine/Dockerfile
           - name: backend
             context: ./backend
+            file: ./backend/Dockerfile
+          # The frontend copies packages/mars-globe, so it builds from the repo root.
           - name: frontend
-            context: ./frontend
+            context: .
+            file: ./frontend/Dockerfile
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +58,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

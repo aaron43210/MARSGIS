@@ -2,6 +2,7 @@ import { ModeTabs } from './ModeTabs';
 import { GazetteerSearch } from '@/components/search/GazetteerSearch';
 import { useStore } from '@/store';
 import { allFeatures } from '@/api/gazetteer';
+import { CrosshairIcon } from '@/components/common';
 
 export function TopBar(): React.ReactElement {
   const baseLayers = useStore((s) => s.baseLayers);
@@ -46,7 +47,7 @@ export function TopBar(): React.ReactElement {
         title="Auto-center and Zoom to Layer"
         style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
       >
-        <span aria-hidden="true">🎯</span>
+        <CrosshairIcon />
         <span>Auto-Center</span>
       </button>
 

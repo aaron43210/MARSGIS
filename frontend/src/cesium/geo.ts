@@ -3,7 +3,7 @@ import type { BBox, Footprint } from '@/types';
 
 /** Normalize a longitude to [-180, 180] (east-positive). */
 export function normalizeLon180(lon: number): number {
-  let x = ((lon + 180) % 360 + 360) % 360 - 180;
+  let x = ((((lon + 180) % 360) + 360) % 360) - 180;
   // Keep +180 as +180 rather than -180 for a clean east edge.
   if (x === -180) x = 180;
   return x;
@@ -14,11 +14,6 @@ export function normalizeLon360(lon: number): number {
   return ((lon % 360) + 360) % 360;
 }
 
-/** Normalize with an explicit target range. */
-export function normalizeLon(lon: number, to: '180' | '360' = '180'): number {
-  return to === '360' ? normalizeLon360(lon) : normalizeLon180(lon);
-}
-
 export function clampLat(lat: number): number {
   return Math.max(-90, Math.min(90, lat));
 }
@@ -26,8 +21,7 @@ export function clampLat(lat: number): number {
 /** Flatten all [lon,lat] vertices of a Polygon/MultiPolygon footprint. */
 function footprintPositions(f: Footprint): Array<[number, number]> {
   const out: Array<[number, number]> = [];
-  const rings: number[][][] =
-    f.type === 'Polygon' ? f.coordinates : f.coordinates.flat();
+  const rings: number[][][] = f.type === 'Polygon' ? f.coordinates : f.coordinates.flat();
   for (const ring of rings) {
     for (const pt of ring) {
       if (pt.length >= 2) out.push([pt[0]!, pt[1]!]);

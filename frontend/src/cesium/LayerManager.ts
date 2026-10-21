@@ -46,7 +46,9 @@ export class LayerManager {
   /** Ids currently managed, in bottom->top collection order. */
   managedOrder(): string[] {
     const entries = [...this.byId.entries()];
-    entries.sort((a, b) => this.viewer.imageryLayers.indexOf(a[1]) - this.viewer.imageryLayers.indexOf(b[1]));
+    entries.sort(
+      (a, b) => this.viewer.imageryLayers.indexOf(a[1]) - this.viewer.imageryLayers.indexOf(b[1]),
+    );
     return entries.map((e) => e[0]);
   }
 

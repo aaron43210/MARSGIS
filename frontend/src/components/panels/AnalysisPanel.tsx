@@ -27,7 +27,11 @@ export function AnalysisPanel(): React.ReactElement {
       ) : (
         <div className="caveat" role="note">
           Select an observation first (
-          <button className="btn" style={{ padding: '2px 6px' }} onClick={() => setMode('observations')}>
+          <button
+            className="btn"
+            style={{ padding: '2px 6px' }}
+            onClick={() => setMode('observations')}
+          >
             open catalogue
           </button>
           ), then its footprint becomes the analysis input.

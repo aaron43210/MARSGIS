@@ -6,10 +6,10 @@ export {
   isMarsEllipsoidInstalled,
   marsViewerOptions,
   applyMarsScene,
-} from './mars';
-export { BASEMAPS, basemapUrl, basemapProvider, type BasemapId, type BasemapDef } from './basemaps';
-export { MarsGlobe, createMarsGlobe, type MarsGlobeOptions } from './globe';
-export { setupMarsGlobe, type SetupMarsOptions } from './plugin';
-export { MarsGlobeElement, defineMarsGlobe } from './webcomponent';
+} from './mars.js';
+export { BASEMAPS, basemapUrl, basemapProvider, type BasemapId, type BasemapDef } from './basemaps.js';
+export { MarsGlobe, createMarsGlobe, type MarsGlobeOptions } from './globe.js';
+export { setupMarsGlobe, type SetupMarsOptions } from './plugin.js';
+export { MarsGlobeElement, defineMarsGlobe } from './webcomponent.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '1.0.0';

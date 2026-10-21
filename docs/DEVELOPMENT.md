@@ -88,6 +88,23 @@ The engine image bundles only the public-domain MICA type spectra as package
 data; it carries **no** bulk/sample archive (enforced by `engine/.dockerignore`
 and the pre-commit large-file guard).
 
+## Configuration
+
+All settings come from `.env` (copy `.env.example`). The ones you are most likely to change:
+
+| Variable | Default | Meaning |
+| -------- | ------- | ------- |
+| `DATABASE_URL` | PostGIS in compose, SQLite otherwise | Database DSN |
+| `JOB_BACKEND` | `inprocess` | `inprocess` or `arq` (needs `REDIS_URL`) |
+| `JOB_CONCURRENCY` / `JOB_TIMEOUT_S` | `2` / `600` | Worker limits |
+| `ENGINE_MODE` | `inprocess` | `inprocess`, `subprocess` or `container` |
+| `ENGINE_IMAGE` | `ghcr.io/aaron43210/marsgis-engine:latest` | Image used when `ENGINE_MODE=container` |
+| `ENGINE_CUBE_SOURCE` | `sample` | `sample` (synthetic) or `archive` (real CRISM cubes from PDS) |
+| `STORAGE_ROOT` | `/data` | Result rasters, shared by backend and worker |
+| `CORS_ORIGINS` | local frontend origins | Allowed browser origins |
+| `REQUIRE_API_KEY` / `API_KEYS` | `false` / `[]` | **Turn on before exposing the API publicly** |
+| `SECRET_KEY`, `POSTGRES_PASSWORD` | `change-me` | Must be changed outside local development |
+
 ## Images
 
 All three images are multi-stage and run as a non-root user (uid 10001). The
