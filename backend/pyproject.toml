@@ -29,18 +29,18 @@ dependencies = [
     "numpy==2.5.4",
     "httpx==0.28.1",
     "anyio>=4.6",
-    "structlog==25.4.0",
+    "structlog==26.1.0",
     "python-multipart==0.0.32",
     "pyyaml==6.0.3",
 ]
 
 [project.optional-dependencies]
-prod = ["arq==0.28.0", "redis==5.3.1"]
+prod = ["arq==0.28.0", "redis==8.1.0"]
 dev = [
     "pytest>=8.2,<9",
-    "pytest-asyncio==0.26.0",
+    "pytest-asyncio==1.4.0",
     "ruff==0.17.1",
-    "mypy==1.18.1",
+    "mypy==2.4.0",
 ]
 
 [project.scripts]
