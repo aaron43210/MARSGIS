@@ -12,4 +12,4 @@ export { MarsGlobe, createMarsGlobe, type MarsGlobeOptions } from './globe.js';
 export { setupMarsGlobe, type SetupMarsOptions } from './plugin.js';
 export { MarsGlobeElement, defineMarsGlobe } from './webcomponent.js';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.0.1';

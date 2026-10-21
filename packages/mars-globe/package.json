@@ -1,6 +1,6 @@
 {
   "name": "mars-globe",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Drop-in 3D Mars globe for CesiumJS — Mars ellipsoid, NASA Mars Trek basemaps, geographic tiling, no Ion token. NPM package, <mars-globe> Web Component, and CesiumJS plugin.",
   "type": "module",
   "types": "./dist/index.d.ts",
