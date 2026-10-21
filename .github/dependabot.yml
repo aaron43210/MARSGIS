@@ -36,6 +36,10 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 3
+    ignore:
+      # arq 0.28 requires redis<6; move both together by hand.
+      - dependency-name: "redis"
+        update-types: ["version-update:semver-major"]
     groups:
       backend-minor-patch:
         update-types: ["minor", "patch"]
