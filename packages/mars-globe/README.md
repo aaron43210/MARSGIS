@@ -78,7 +78,7 @@ setupMarsGlobe(viewer, { basemap: 'viking' });
 |----|-------|
 | `viking` | Viking MDIM 2.1 color mosaic (232 m) |
 | `mola` | MOLA color shaded relief (463 m) |
-| `mola-dem` | MOLA colorized elevation (visual, 463 m) |
+| `mola-dem` | MOLA elevation, grayscale with brighter = higher (visual, 463 m) |
 | `themis` | THEMIS day IR (100 m) |
 
 All are the global equirectangular NASA Trek grid (2×1 tiles at level 0), served

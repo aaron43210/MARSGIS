@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 — 2026-10-21
+
+### Fixed
+- The `mola-dem` basemap is described as grayscale elevation (brighter is
+  higher) instead of colour, matching what NASA Trek actually serves.
+
 ## 1.0.0 — 2026-10-18
 
 First stable release. The public API is unchanged from 0.1.0 and is now covered

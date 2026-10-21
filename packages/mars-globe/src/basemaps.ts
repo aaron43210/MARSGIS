@@ -39,7 +39,7 @@ export const BASEMAPS: Record<BasemapId, BasemapDef> = {
   },
   'mola-dem': {
     id: 'mola-dem',
-    title: 'MOLA Elevation (color, 463 m)',
+    title: 'MOLA Elevation (grayscale, 463 m)',
     product: 'mola128_mola64_merge_90Nto90S_SimpleC_clon0',
     ext: 'png',
     maxZoom: 6,
