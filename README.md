@@ -65,6 +65,14 @@ import { createMarsGlobe } from 'mars-globe';
 createMarsGlobe('map', { defaultBasemap: 'viking' });
 ```
 
+It ships four NASA Mars Trek basemaps, chosen with `defaultBasemap` or switched at runtime with
+`setBasemap(id)`:
+
+| `viking` | `mola` | `mola-dem` | `themis` |
+| :---: | :---: | :---: | :---: |
+| <img src="packages/mars-globe/docs/screenshots/basemaps/viking.png" alt="Viking colour mosaic" width="200"> | <img src="packages/mars-globe/docs/screenshots/basemaps/mola.png" alt="MOLA colour shaded relief" width="200"> | <img src="packages/mars-globe/docs/screenshots/basemaps/mola-dem.png" alt="MOLA elevation" width="200"> | <img src="packages/mars-globe/docs/screenshots/basemaps/themis.png" alt="THEMIS daytime infrared" width="200"> |
+| Viking MDIM 2.1 colour mosaic, 232 m | MOLA colour shaded relief, 463 m | MOLA elevation (brighter is higher), 463 m | THEMIS daytime infrared, 100 m |
+
 See [packages/mars-globe](packages/mars-globe/README.md).
 
 ## Development without Docker
