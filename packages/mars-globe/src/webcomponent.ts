@@ -1,12 +1,17 @@
 // Framework-agnostic <mars-globe> custom element.
 // Requires Cesium present (bundled, or window.Cesium via the standalone build)
 // and, for assets, window.CESIUM_BASE_URL + Cesium's widgets.css on the page.
-import { type BasemapId } from './basemaps';
-import { MarsGlobe, createMarsGlobe } from './globe';
+import { type BasemapId } from './basemaps.js';
+import { MarsGlobe, createMarsGlobe } from './globe.js';
 
 const VALID = new Set<string>(['viking', 'mola', 'mola-dem', 'themis']);
 
-export class MarsGlobeElement extends HTMLElement {
+// HTMLElement doesn't exist in Node/SSR; fall back to a stub base so merely
+// importing the package server-side doesn't throw (the element is never defined there).
+const ElementBase: typeof HTMLElement =
+  typeof HTMLElement !== 'undefined' ? HTMLElement : (class {} as unknown as typeof HTMLElement);
+
+export class MarsGlobeElement extends ElementBase {
   private globe: MarsGlobe | undefined;
   private container: HTMLDivElement | undefined;
 

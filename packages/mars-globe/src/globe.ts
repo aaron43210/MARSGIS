@@ -1,8 +1,8 @@
 // createMarsGlobe: a self-contained, Mars-configured Cesium Viewer with
 // switchable NASA Trek basemaps. The primary programmatic entry point.
 import { ImageryLayer, Viewer } from 'cesium';
-import { applyMarsScene, installMarsEllipsoid, marsViewerOptions } from './mars';
-import { type BasemapId, basemapProvider } from './basemaps';
+import { applyMarsScene, installMarsEllipsoid, marsViewerOptions } from './mars.js';
+import { type BasemapId, basemapProvider } from './basemaps.js';
 
 export interface MarsGlobeOptions {
   /** Initial basemap (default 'viking'). */

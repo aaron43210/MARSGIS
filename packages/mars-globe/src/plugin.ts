@@ -1,7 +1,7 @@
 // CesiumJS plugin form: turn an EXISTING Viewer into Mars.
 import type { Viewer } from 'cesium';
-import { applyMarsScene, isMarsEllipsoidInstalled } from './mars';
-import { type BasemapId, basemapProvider } from './basemaps';
+import { applyMarsScene, isMarsEllipsoidInstalled } from './mars.js';
+import { type BasemapId, basemapProvider } from './basemaps.js';
 
 export interface SetupMarsOptions {
   /** Basemap to add at the bottom of the stack (default 'viking'). */
@@ -10,8 +10,9 @@ export interface SetupMarsOptions {
 }
 
 /**
- * Configure an existing Cesium ``Viewer`` for Mars: apply the dark scene,
- * disable Earth chrome, and add a Trek basemap.
+ * Configure an existing Cesium ``Viewer`` for Mars: apply the dark scene (no
+ * atmosphere/sun/moon/fog) and add a Trek basemap. The Viewer's own widgets are
+ * left as constructed; use {@link marsViewerOptions} when building it to drop them.
  *
  * IMPORTANT: Cesium reads the ellipsoid at Viewer construction, so for correct
  * Mars geometry you must call {@link installMarsEllipsoid} BEFORE `new Viewer()`.

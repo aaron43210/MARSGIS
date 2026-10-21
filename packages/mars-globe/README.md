@@ -56,7 +56,7 @@ Or with the standalone build + a plain script tag (Cesium loaded first):
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Widgets/widgets.css" />
 <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/';</script>
 <script src="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Cesium.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mars-globe/dist/mars-globe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mars-globe@1/dist/mars-globe.min.js"></script>
 
 <mars-globe basemap="mola" style="display:block; width:100vw; height:100vh;"></mars-globe>
 ```
@@ -100,9 +100,19 @@ live from `trek.nasa.gov`.
 - `requestRenderMode` defaults **off** so async tile loads never leave the globe
   on a blank first frame. Pass `viewerOptions: { requestRenderMode: true }` if you
   drive `scene.requestRender()` yourself.
+- Safe to import during SSR / in Node (nothing touches the DOM until you create
+  a globe or call `defineMarsGlobe()` in the browser).
 - Coordinates are Mars IAU 2000 degrees (east-positive longitude).
 - Imagery is NASA/JPL/USGS — Mars Trek, streamed live and **not** redistributed
   by this package.
+
+## Development
+
+```bash
+npm run build          # ESM + types + standalone IIFE into dist/
+npm test               # unit tests against dist/
+npm run test:browser   # headless Chrome, all 3 usage modes (needs network for Trek tiles)
+```
 
 ## License
 
