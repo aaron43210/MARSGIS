@@ -2,12 +2,6 @@
 // longitude east-positive in [-180, 180], planetocentric latitude in [-90, 90].
 // See contracts/enums.json#crs — this is NOT Earth WGS84.
 
-/** Mars reference ellipsoid radii (metres). Equatorial = x = y, polar = z. */
-export const MARS_RADII = {
-  equatorial: 3396190,
-  polar: 3376200,
-} as const;
-
 /** Default camera on first load (global Mars view centred on the prime meridian). */
 export const DEFAULT_CAMERA = {
   lon: 77.0,

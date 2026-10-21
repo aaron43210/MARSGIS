@@ -14,11 +14,6 @@ export function normalizeLon360(lon: number): number {
   return ((lon % 360) + 360) % 360;
 }
 
-/** Normalize with an explicit target range. */
-export function normalizeLon(lon: number, to: '180' | '360' = '180'): number {
-  return to === '360' ? normalizeLon360(lon) : normalizeLon180(lon);
-}
-
 export function clampLat(lat: number): number {
   return Math.max(-90, Math.min(90, lat));
 }

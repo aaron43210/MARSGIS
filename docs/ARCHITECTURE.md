@@ -58,7 +58,7 @@ docs/             this file · DEVELOPMENT · RELEASING · DATA_LICENSES · evid
 
 Mars **IAU 2000** degrees, CRS **104905**:
 
-- Longitude east-positive, `[-180, 180]` (enforced by a shared `normalizeLon` helper).
+- Longitude east-positive, `[-180, 180]` (enforced by the shared `normalizeLon180` helper).
 - Latitude planetocentric, `[-90, 90]`.
 - GeoJSON carries plain degrees; the datum is documented in `enums.json.crs`.
 - Imagery and overlays use a `GeographicTilingScheme` with **2 columns × 1 row at z0**, matching
