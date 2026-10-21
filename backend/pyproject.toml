@@ -37,7 +37,7 @@ dependencies = [
 [project.optional-dependencies]
 prod = ["arq==0.28.0", "redis==5.3.1"]
 dev = [
-    "pytest>=8.2,<9",
+    "pytest>=8.2,<10",
     "pytest-asyncio==0.26.0",
     "ruff==0.17.1",
     "mypy==1.18.1",
