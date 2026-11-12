@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2 — 2026-11-12
+
+### Changed
+- `homepage` now points to the project website,
+  https://aaron43210.github.io/mars-globe/, which has a live demo.
+
 ## 1.0.1 — 2026-10-21
 
 ### Fixed
