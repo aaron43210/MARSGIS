@@ -138,4 +138,3 @@ export interface ResultPixel {
   /** True when the result came from the bundled synthetic sample cube. */
   synthetic_input: boolean;
 }
-
