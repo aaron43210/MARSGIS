@@ -112,3 +112,20 @@ def test_full_width_strip_streams_to_disk_with_progress(monkeypatch, tmp_path):
     assert seen[-1] == (bands, bands) and len(seen) == bands
     assert (tmp_path / "obs_strip.hdr").exists()
     assert not list(tmp_path.glob("*_partial*"))  # published atomically
+
+
+def test_concurrent_downloads_use_separate_temp_files(monkeypatch, tmp_path):
+    """Two jobs streaming the same new area must not write into one partial file."""
+    from app.services import cube_fetch as cf
+
+    seen: list[str] = []
+    real = cf._read_bsq_window
+
+    def spy(*a, out=None, **k):
+        seen.append(str(out.filename))
+        return real(*a, out=out, **k)
+
+    monkeypatch.setattr(cf, "_read_bsq_window", spy)
+    test_full_width_strip_streams_to_disk_with_progress(monkeypatch, tmp_path)
+    test_full_width_strip_streams_to_disk_with_progress(monkeypatch, tmp_path)
+    assert len(seen) == 2 and seen[0] != seen[1]
