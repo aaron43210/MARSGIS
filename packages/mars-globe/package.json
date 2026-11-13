@@ -1,6 +1,6 @@
 {
   "name": "mars-globe",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Drop-in 3D Mars globe for CesiumJS — Mars ellipsoid, NASA Mars Trek basemaps, geographic tiling, no Ion token. NPM package, <mars-globe> Web Component, and CesiumJS plugin.",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -64,7 +64,7 @@
     "url": "git+https://github.com/aaron43210/MARSGIS.git",
     "directory": "packages/mars-globe"
   },
-  "homepage": "https://github.com/aaron43210/MARSGIS/tree/main/packages/mars-globe#readme",
+  "homepage": "https://aaron43210.github.io/mars-globe/",
   "bugs": {
     "url": "https://github.com/aaron43210/MARSGIS/issues"
   },

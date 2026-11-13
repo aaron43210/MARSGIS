@@ -4,6 +4,8 @@ A drop-in **3D Mars globe for CesiumJS** — the Mars ellipsoid, NASA Mars Trek
 basemaps, and the correct geographic tiling, configured for you. No Cesium Ion
 token required.
 
+**[Live demo and docs → aaron43210.github.io/mars-globe](https://aaron43210.github.io/mars-globe/)**
+
 Setting Cesium up for Mars (overriding the ellipsoid to 3,396 km × 3,376 km,
 removing Earth atmosphere/skybox/geocoder, and wiring the NASA Trek tile scheme)
 is fiddly and poorly documented. This package does it in one line, three ways:
