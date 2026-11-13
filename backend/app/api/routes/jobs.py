@@ -23,6 +23,7 @@ _IMPLEMENTED = {a.value for a in IMPLEMENTED_ALGORITHMS_V1}
 def job_to_dto(row: AnalysisJobRow) -> AnalysisJob:
     params = dict(row.params or {})
     center = params.pop("center", None)  # stored with the params, exposed on its own
+    area = params.pop("area", "small")
     return AnalysisJob.model_validate(
         {
             "id": row.id,
@@ -31,6 +32,7 @@ def job_to_dto(row: AnalysisJobRow) -> AnalysisJob:
             "reference_id": row.reference_id,
             "params": params,
             "center": center,
+            "area": area,
             "status": row.status,
             "progress": row.progress,
             "message": row.message,
@@ -112,6 +114,7 @@ async def create_job(
     params = (body.params or SamParams()).model_dump(mode="json")
     if body.center is not None:
         params["center"] = {"lon": body.center.lon, "lat": body.center.lat}
+    params["area"] = body.area
     import uuid
 
     job = AnalysisJobRow(

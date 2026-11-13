@@ -4,6 +4,7 @@ import { Button, ErrorBanner, Spinner, Toggle } from '@/components/common';
 import { MethodSelect } from '@/components/analysis/MethodSelect';
 import { ReferenceSpectrumSelect } from '@/components/analysis/ReferenceSpectrumSelect';
 import { SamParams } from '@/components/analysis/SamParams';
+import { AreaSizeSelect } from '@/components/analysis/AreaSizeSelect';
 import { JobProgress } from '@/components/analysis/JobProgress';
 import { CANDIDATE_MATCH_CAVEAT } from '@/types';
 import { formatLonLat } from '@/utils/format';
@@ -47,7 +48,7 @@ export function AnalysisPanel(): React.ReactElement {
           <Toggle
             checked={useCenter && Boolean(center)}
             onChange={setUseCenter}
-            label="Analyse around the spot I clicked"
+            label="Centre it on the spot I clicked"
           />
           <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
             {center ? (
@@ -62,6 +63,8 @@ export function AnalysisPanel(): React.ReactElement {
           </div>
         </div>
       ) : null}
+
+      {observationId ? <AreaSizeSelect /> : null}
 
       <MethodSelect />
       <ReferenceSpectrumSelect />

@@ -539,6 +539,15 @@ components:
           - $ref: '#/components/schemas/LonLat'
           - type: 'null'
           default: null
+        area:
+          default: small
+          enum:
+          - small
+          - medium
+          - large
+          - full
+          title: Area
+          type: string
         status:
           $ref: '#/components/schemas/JobStatus'
         progress:
@@ -619,6 +628,15 @@ components:
           - $ref: '#/components/schemas/LonLat'
           - type: 'null'
           default: null
+        area:
+          default: small
+          enum:
+          - small
+          - medium
+          - large
+          - full
+          title: Area
+          type: string
       required:
       - observation_id
       - reference_id

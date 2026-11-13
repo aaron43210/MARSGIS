@@ -24,6 +24,7 @@ export const createAnalysisSlice: AppSlice<AnalysisSlice> = (set, get) => ({
     params: {},
     center: null,
     useCenter: false,
+    area: 'small',
   },
   jobs: {},
   activeJobId: null,
@@ -75,6 +76,11 @@ export const createAnalysisSlice: AppSlice<AnalysisSlice> = (set, get) => ({
       state.config.useCenter = use;
     }),
 
+  setArea: (area) =>
+    set((state) => {
+      state.config.area = area;
+    }),
+
   submitJob: async () => {
     const { config } = get();
     if (!config.observation_id || !config.reference_id) {
@@ -94,6 +100,7 @@ export const createAnalysisSlice: AppSlice<AnalysisSlice> = (set, get) => ({
       reference_id: config.reference_id,
       params: config.params,
       ...(config.useCenter && config.center ? { center: config.center } : {}),
+      area: config.area,
     };
     try {
       const job = await createJob(body);

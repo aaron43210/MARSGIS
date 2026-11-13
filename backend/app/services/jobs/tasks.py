@@ -75,17 +75,32 @@ class _JobInputs:
     obs_source_url: str
     obs_bbox: tuple[float, float, float, float] | None = None
     center: tuple[float, float] | None = None
+    area: str = "small"
 
 
-def subset_stem(observation_id: str, center: tuple[float, float] | None) -> str:
-    """File stem of a streamed window: one cache entry per (observation, centre)."""
+def area_rows(settings: Settings, area: str) -> int | None:
+    """Rows of the full-width strip for an area size (``None`` = whole image)."""
+    return {
+        "small": settings.archive_subset_px,
+        "medium": settings.archive_rows_medium,
+        "large": settings.archive_rows_large,
+    }.get(area)
+
+
+def subset_stem(
+    observation_id: str, center: tuple[float, float] | None, area: str = "small"
+) -> str:
+    """File stem of a streamed strip: one cache entry per (observation, area, centre)."""
+    if area == "full":
+        return f"{observation_id}_full"  # the whole image: the centre is irrelevant
+    prefix = f"{observation_id}_strip_{area}"
     if center is None:
-        return f"{observation_id}_subset"
+        return prefix
     lon, lat = center
     # No dots: callers append ".img"/".hdr" with Path.with_suffix, which would cut a
     # name like "..._p22.3000" at its last dot.
     tag = f"{lon:+.4f}_{lat:+.4f}".replace("+", "p").replace("-", "m").replace(".", "d")
-    return f"{observation_id}_subset_{tag}"
+    return f"{prefix}_{tag}"
 
 
 def local_cube_path(
@@ -93,6 +108,7 @@ def local_cube_path(
     observation_id: str,
     cube_source: str,
     center: tuple[float, float] | None = None,
+    area: str = "small",
 ) -> Path | None:
     """The cube a result was computed from, if it is on disk.
 
@@ -103,7 +119,7 @@ def local_cube_path(
         cube = settings.sample_cube_abspath
         return cube if cube.exists() else None
     cubes_dir = settings.storage_path / "cubes"
-    names = [f"{subset_stem(observation_id, center)}.img"]
+    names = [f"{subset_stem(observation_id, center, area)}.img"]
     if center is None:
         names.insert(0, f"{observation_id}.img")  # a fully staged cube
     for name in names:
@@ -113,7 +129,7 @@ def local_cube_path(
     return None
 
 
-def stage_cube(settings: Settings, inputs: _JobInputs) -> tuple[Path, bool]:
+def stage_cube(settings: Settings, inputs: _JobInputs, progress=None) -> tuple[Path, bool]:
     """Return (cube_path, is_synthetic). 'archive' (default) streams the selected
     observation; 'sample' uses the bundled synthetic cube."""
     if settings.engine_cube_source == "sample":
@@ -129,7 +145,7 @@ def stage_cube(settings: Settings, inputs: _JobInputs) -> tuple[Path, bool]:
     # PDS archive (via /vsicurl range reads — never a bulk download), or reuse a
     # pre-staged full cube if present. Never silently substitute synthetic data.
     cubes_dir = settings.storage_path / "cubes"
-    staged = local_cube_path(settings, inputs.observation_id, "archive", inputs.center)
+    staged = local_cube_path(settings, inputs.observation_id, "archive", inputs.center, inputs.area)
     if staged is not None:
         return staged, False
     if inputs.obs_bbox is None:
@@ -145,7 +161,9 @@ def stage_cube(settings: Settings, inputs: _JobInputs) -> tuple[Path, bool]:
         inputs.obs_bbox,
         cubes_dir,
         center=inputs.center,
-        stem=subset_stem(inputs.observation_id, inputs.center),
+        stem=subset_stem(inputs.observation_id, inputs.center, inputs.area),
+        rows=area_rows(settings, inputs.area),
+        progress=progress,
     )
     if subset is not None:
         return subset, False
@@ -348,6 +366,7 @@ async def _load_inputs(session, job: AnalysisJobRow) -> _JobInputs:
         obs_source_url=obs.source_url if obs else "",
         obs_bbox=(obs.minx, obs.miny, obs.maxx, obs.maxy) if obs else None,
         center=_center_from(params.get("center")),
+        area=str(params.get("area") or "small"),
     )
 
 
@@ -431,7 +450,14 @@ async def run_analysis_job(
         result_id = uuid.uuid4().hex
         provenance_id = uuid.uuid4().hex
         out_dir = storage.result_dir(result_id, create=True, settings=settings)
-        cube_path, is_synthetic = await anyio.to_thread.run_sync(stage_cube, settings, inputs)
+        stage_cb = make_progress_cb(job_id)
+
+        def _download_progress(done: int, total: int) -> None:
+            stage_cb(0.05 + 0.6 * done / total, f"downloading from NASA: {done}/{total} bands")
+
+        cube_path, is_synthetic = await anyio.to_thread.run_sync(
+            lambda: stage_cube(settings, inputs, _download_progress)
+        )
 
         request = EngineRequest(
             job_id=job_id,
@@ -449,7 +475,12 @@ async def run_analysis_job(
             timestamp=None,
         )
 
-        progress_cb = make_progress_cb(job_id)
+        engine_cb = make_progress_cb(job_id)
+
+        def progress_cb(fraction: float, message: str) -> None:
+            # The download used 0.05-0.65; keep the bar moving forward.
+            engine_cb(0.65 + 0.25 * fraction, message)
+
         engine_result: EngineResult = await anyio.to_thread.run_sync(
             lambda: adapter.analyze(request, progress_cb)
         )
@@ -569,6 +600,7 @@ async def _persist_result(
         if inputs.wavelength_subset_nm
         else None,
         "center": {"lon": inputs.center[0], "lat": inputs.center[1]} if inputs.center else None,
+        "area": inputs.area,
     }
     provenance = _build_provenance(
         provenance_id=provenance_id,

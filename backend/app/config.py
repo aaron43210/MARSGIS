@@ -56,7 +56,8 @@ class Settings(BaseSettings):
     job_backend: JobBackend = "inprocess"
     redis_url: str = "redis://localhost:6379/0"
     job_concurrency: int = Field(default=2, ge=1, le=32)
-    job_timeout_s: int = Field(default=600, ge=1)
+    #: Whole-image analyses stream ~1.4 GB from PDS; allow up to an hour per job.
+    job_timeout_s: int = Field(default=3600, ge=1)
     max_concurrent_jobs_per_client: int = Field(default=2, ge=1)
     max_jobs_per_hour_per_client: int = Field(default=20, ge=1)
 
@@ -113,7 +114,10 @@ class Settings(BaseSettings):
     #: cube from the PDS archive via GDAL /vsicurl range reads (never the whole
     #: ~1 GB file) and run SAM on that real subset. Keep small — CRISM cubes are
     #: band-sequential, so each band is a separate range read (latency-bound).
-    archive_subset_px: int = Field(default=48, ge=8, le=256)
+    #: Rows streamed per area size; every strip spans the image's full width.
+    archive_subset_px: int = Field(default=48, ge=8, le=256)  # "small"
+    archive_rows_medium: int = Field(default=128, ge=8, le=2048)
+    archive_rows_large: int = Field(default=256, ge=8, le=4096)
     archive_http_timeout_s: int = Field(default=60, ge=5)
     #: Parallel HTTP range requests when streaming a window (one per band).
     archive_parallel_requests: int = Field(default=16, ge=1, le=64)

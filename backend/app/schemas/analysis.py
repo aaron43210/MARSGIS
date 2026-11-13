@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from datetime import datetime
+from typing import Literal
 
 from pydantic import Field
 
@@ -12,6 +13,9 @@ from .enums import AnalysisAlgorithm, AssetRole, JobStatus
 from .layer import Legend, MapLayer
 
 _COG_MEDIA = "image/tiff; application=geotiff; profile=cloud-optimized"
+
+
+AreaSize = Literal["small", "medium", "large", "full"]
 
 
 class SamParams(ApiModel):
@@ -35,6 +39,9 @@ class AnalysisJobCreate(ApiModel):
     #: Optional point inside the observation footprint. When set, the analysed window
     #: is centred here (the spot the user clicked) instead of the observation centre.
     center: LonLat | None = None
+    #: How much of the observation to analyse: a full-width strip of 48 (small),
+    #: 128 (medium) or 256 (large) rows, or the whole image (full).
+    area: AreaSize = "small"
 
 
 class JobError(ApiModel):
@@ -52,6 +59,7 @@ class AnalysisJob(ApiModel):
     params: SamParams
     #: The analysis centre the job was created with (None = observation centre).
     center: LonLat | None = None
+    area: AreaSize = "small"
     status: JobStatus
     progress: float = Field(default=0.0, ge=0.0, le=1.0)
     message: str | None = None

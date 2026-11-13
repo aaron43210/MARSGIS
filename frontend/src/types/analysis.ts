@@ -15,6 +15,9 @@ export interface SamParams {
 /** v1 supports SAM only; SID/BAND_RATIO params reserved. */
 export type AnalysisParams = SamParams;
 
+/** Full-width strip of 48 / 128 / 256 rows, or the whole image. */
+export type AreaSize = 'small' | 'medium' | 'large' | 'full';
+
 export interface AnalysisJobCreate {
   observation_id: string;
   algorithm: AnalysisAlgorithm; // "SAM" in v1
@@ -22,6 +25,8 @@ export interface AnalysisJobCreate {
   params?: Partial<SamParams>;
   /** Optional point inside the footprint; the analysed window is centred here. */
   center?: LonLat;
+  /** How much of the observation to analyse (default 'small'). */
+  area?: AreaSize;
 }
 
 export interface JobError {
@@ -39,6 +44,7 @@ export interface AnalysisJob {
   params: AnalysisParams; // resolved (defaults applied)
   /** Analysis centre the job was created with (null = observation centre). */
   center?: LonLat | null;
+  area?: AreaSize;
   status: JobStatus;
   progress: number; // 0..1
   message: string | null;
