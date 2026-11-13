@@ -14,6 +14,7 @@ small (``archive_subset_px``). This is on-demand single-run streaming, not insta
 from __future__ import annotations
 
 import re
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -310,7 +311,8 @@ def fetch_subset_cube(
 
     out_dir.mkdir(parents=True, exist_ok=True)
     base_path = out_dir / (stem or f"{observation_id}_subset")
-    tmp_base = base_path.with_name(base_path.name + "_partial")
+    # Unique per download: two jobs streaming the same new area must not share a file.
+    tmp_base = base_path.with_name(f"{base_path.name}_partial_{uuid.uuid4().hex}")
     # Thread-local GDAL config options (rasterio.Env) override process-wide env vars,
     # so other features' GDAL settings can neither break nor be broken by this read.
     gdal_opts = {
