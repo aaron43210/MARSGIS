@@ -57,22 +57,22 @@ export function installPicking(
   }, ScreenSpaceEventType.MOUSE_MOVE);
 
   handler.setInputAction((click: ScreenSpaceEventHandler.PositionedEvent) => {
+    const state = store.getState();
+    // Results mode inspects first: the result strip lies inside its observation's
+    // footprint polygon, which would otherwise swallow every click on the strip.
+    if (state.mode === 'results' && state.activeResultId) {
+      const lonlat = toLonLat(viewer, click.position);
+      if (lonlat) void state.inspectPixel(state.activeResultId, lonlat.lon, lonlat.lat);
+      return;
+    }
     const picked: unknown = viewer.scene.pick(click.position);
     const obsId = pickedObservationId(picked);
-    const state = store.getState();
     if (obsId) {
       state.selectObservation(obsId);
       footprints.setSelected(obsId);
       // Remember where inside the footprint the user clicked: the optional analysis centre.
       store.getState().setAnalysisCenter(toLonLat(viewer, click.position));
       return;
-    }
-    // Empty-space click in results mode with an active result -> inspect the pixel.
-    if (state.mode === 'results' && state.activeResultId) {
-      const lonlat = toLonLat(viewer, click.position);
-      if (lonlat) {
-        void state.inspectPixel(state.activeResultId, lonlat.lon, lonlat.lat);
-      }
     }
   }, ScreenSpaceEventType.LEFT_CLICK);
 
