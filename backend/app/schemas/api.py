@@ -41,7 +41,7 @@ class HealthComponents(ApiModel):
 class HealthResponse(ApiModel):
     status: HealthStatus
     version: str
-    contract_version: str = "1.0.0"
+    contract_version: str = "1.1.0"
     git_sha: str | None = None
     time: datetime
     components: HealthComponents

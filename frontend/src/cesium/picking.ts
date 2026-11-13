@@ -63,6 +63,8 @@ export function installPicking(
     if (obsId) {
       state.selectObservation(obsId);
       footprints.setSelected(obsId);
+      // Remember where inside the footprint the user clicked: the optional analysis centre.
+      store.getState().setAnalysisCenter(toLonLat(viewer, click.position));
       return;
     }
     // Empty-space click in results mode with an active result -> inspect the pixel.

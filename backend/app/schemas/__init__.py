@@ -1,7 +1,7 @@
 """MarsGIS shared contract schemas (Pydantic v2).
 
 Backend import surface. Mirrors frontend/src/types/* and contracts/openapi.yaml.
-contract_version: 1.0.0
+contract_version: 1.1.0
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from .analysis import (
     Histogram,
     JobError,
     RasterAsset,
+    ResultPixel,
     ResultRasters,
     SamParams,
     SummaryStats,
@@ -87,6 +88,7 @@ __all__ = [
     "AnalysisJobCreate",
     "AnalysisParams",
     "AnalysisResult",
+    "ResultPixel",
     "ApiModel",
     "BBox",
     "Dataset",

@@ -1,6 +1,6 @@
 // MarsGIS shared contract — barrel export.
 // Import from "@/types": import type { Observation, AnalysisResult } from "@/types";
-// contract_version: 1.0.0
+// contract_version: 1.1.0
 export * from './enums';
 export * from './common';
 export * from './observation';

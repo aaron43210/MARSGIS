@@ -222,7 +222,7 @@ def create_app() -> FastAPI:
         return {
             "name": "MarsGIS API",
             "version": __version__,
-            "contract_version": "1.0.0",
+            "contract_version": "1.1.0",
             "docs": "/docs",
             "health": "/api/health",
         }

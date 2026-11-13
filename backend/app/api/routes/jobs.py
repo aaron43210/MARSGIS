@@ -21,13 +21,16 @@ _IMPLEMENTED = {a.value for a in IMPLEMENTED_ALGORITHMS_V1}
 
 
 def job_to_dto(row: AnalysisJobRow) -> AnalysisJob:
+    params = dict(row.params or {})
+    center = params.pop("center", None)  # stored with the params, exposed on its own
     return AnalysisJob.model_validate(
         {
             "id": row.id,
             "observation_id": row.observation_id,
             "algorithm": row.algorithm,
             "reference_id": row.reference_id,
-            "params": row.params or {},
+            "params": params,
+            "center": center,
             "status": row.status,
             "progress": row.progress,
             "message": row.message,
@@ -70,6 +73,17 @@ async def create_job(
     if not obs.analysis_suitable:
         raise ValidationErrorApp(f"observation '{body.observation_id}' is not analysis_suitable")
 
+    # 2b. An optional analysis centre must fall inside the observation footprint.
+    if body.center is not None:
+        c = body.center
+        if None in (obs.minx, obs.miny, obs.maxx, obs.maxy) or not (
+            obs.minx <= c.lon <= obs.maxx and obs.miny <= c.lat <= obs.maxy
+        ):
+            raise ValidationErrorApp(
+                "center is outside the observation footprint",
+                detail=f"Pick a point inside {body.observation_id}.",
+            )
+
     # 3. Reference mineral must exist.
     mineral = await session.get(Mineral, body.reference_id)
     if mineral is None:
@@ -96,6 +110,8 @@ async def create_job(
 
     # 6. Create + enqueue.
     params = (body.params or SamParams()).model_dump(mode="json")
+    if body.center is not None:
+        params["center"] = {"lon": body.center.lon, "lat": body.center.lat}
     import uuid
 
     job = AnalysisJobRow(

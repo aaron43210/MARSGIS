@@ -1,5 +1,5 @@
 // MarsGIS shared contract — common primitive & envelope types.
-// contract_version: 1.0.0
+// contract_version: 1.1.0
 
 /** RFC 3339 / ISO 8601 UTC timestamp, e.g. "2026-10-11T00:00:00Z". */
 export type ISODateTime = string;

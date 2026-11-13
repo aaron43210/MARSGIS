@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "MarsGIS canonical enumerations and shared defaults",
   "description": "Single source of truth for every closed vocabulary + cross-cutting default shared by frontend (TS), backend (Pydantic) and engine. frontend/src/types/enums.ts and backend/app/schemas/enums.py MUST mirror this file verbatim.",
-  "contract_version": "1.0.0",
+  "contract_version": "1.1.0",
   "enums": {
     "InstrumentType": ["CRISM", "CTX", "HiRISE", "HRSC", "OMEGA", "THEMIS", "MOLA"],
     "ProductType": ["MTRDR", "TRDR", "DDR", "MOSAIC", "DEM", "ORTHOIMAGE", "BASEMAP"],

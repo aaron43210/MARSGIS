@@ -27,6 +27,14 @@ export function ResultsPanel(): React.ReactElement {
 
       {result ? (
         <>
+          {result.synthetic_input ? (
+            <div className="caveat" role="alert" style={{ borderColor: 'var(--warn)' }}>
+              <strong>Practice data, not {result.observation_id}.</strong> This result was computed
+              on the bundled synthetic sample cube, so its location, pixel count and spectra are a
+              demo. Set <span className="mono">ENGINE_CUBE_SOURCE=archive</span> to analyse the
+              selected observation.
+            </div>
+          ) : null}
           <CaveatBlock text={result.caveat} />
 
           <div className="layer-row">

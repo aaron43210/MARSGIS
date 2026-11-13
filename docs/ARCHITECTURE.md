@@ -4,7 +4,7 @@ MarsGIS has three parts: a CesiumJS frontend, a FastAPI backend, and a standalon
 hyperspectral engine. The wire contract is `contracts/openapi.yaml`, generated from the
 Pydantic schemas in `backend/app/schemas/`; `contracts/enums.json` pins every closed
 vocabulary and the SAM/tile defaults; `frontend/src/types/*.ts` mirrors them by hand.
-The contract version is **1.0.0**.
+The contract version is **1.1.0**.
 
 ## System shape
 
@@ -124,8 +124,14 @@ The backend reaches the engine only through `EngineAdapter`, selected by `ENGINE
 
 All three produce the same artefacts (angle COG, candidate COG, `provenance.json`, `report.txt`)
 and the same provenance shape (`engine/schemas/provenance.schema.json`). `ENGINE_CUBE_SOURCE`
-picks the input: `sample` (the bundled synthetic cube, flagged `synthetic_input`) or `archive`
-(the real MTRDR cube, streamed from PDS on demand).
+picks the input: `archive` (default: the selected observation's real MTRDR cube — a window
+at its centre, streamed from PDS on demand and cached under `storage/cubes/`) or `sample`
+(the bundled synthetic cube for offline demos/CI; the result and its pixels carry
+`synthetic_input: true` and the UI warns that it is practice data).
+
+`GET /api/results/{id}/pixel?lon=&lat=` returns the real spectrum of the clicked pixel next
+to the reference, on the exact bands SAM used, plus that pixel's angle (equal to the value in
+the angle raster). The pixel inspector plots this; nothing is generated client-side.
 
 ## Database
 

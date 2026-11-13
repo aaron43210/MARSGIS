@@ -1,5 +1,5 @@
 // MarsGIS shared contract — map layers, tile sources, legends (the display contract).
-// contract_version: 1.0.0
+// contract_version: 1.1.0
 import type { BBox, ISODateTime, UrlString } from './common';
 import type { AvailabilityStatus, LayerType, LegendType, TileOrder, TilingScheme } from './enums';
 

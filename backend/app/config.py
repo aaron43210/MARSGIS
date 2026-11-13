@@ -67,7 +67,9 @@ class Settings(BaseSettings):
     engine_rlimit_as_mb: int = Field(default=2048, ge=128)
     engine_rlimit_cpu_s: int = Field(default=600, ge=1)
     engine_max_pixels: int = Field(default=4_000_000, ge=1)
-    engine_cube_source: CubeSource = "sample"
+    #: "archive" (default) analyses the observation the user selected, streamed from
+    #: NASA PDS; "sample" uses the bundled SYNTHETIC cube (offline demo / tests only).
+    engine_cube_source: CubeSource = "archive"
     sample_cube_path: str = "../engine/sample_data/sample_crism_nili.img"
 
     # --- Security / abuse limits ---
@@ -113,6 +115,8 @@ class Settings(BaseSettings):
     #: band-sequential, so each band is a separate range read (latency-bound).
     archive_subset_px: int = Field(default=48, ge=8, le=256)
     archive_http_timeout_s: int = Field(default=60, ge=5)
+    #: Parallel HTTP range requests when streaming a window (one per band).
+    archive_parallel_requests: int = Field(default=16, ge=1, le=64)
 
     @field_validator("cors_origins", "api_keys", mode="before")
     @classmethod

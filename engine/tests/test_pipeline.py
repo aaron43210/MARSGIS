@@ -129,3 +129,34 @@ def test_preprocessing_caveat_is_machine_readable(tmp_path, syn_cube, syn_refere
     caveat = record["preprocessing_caveat"].lower()
     assert "ratioed" in caveat
     assert record["preprocessing_caveat"] == config.PREPROCESSING_CAVEAT
+
+
+def test_inspect_pixel_matches_angle_raster(tmp_path, syn_cube, syn_reference):
+    """The inspector's per-pixel angle is the same number SAM wrote to the raster."""
+    from marsgis_engine import inspect_pixel
+
+    res = _run(syn_cube, syn_reference, tmp_path)
+    params = RunParams(out_dir=str(tmp_path), out_prefix="result", timestamp="placeholder")
+    with rasterio.open(res.angle_path) as ds:
+        angle = ds.read(1)
+    planted = syn_cube.planted[0]
+    rows, cols = angle.shape
+    for r, c in [planted, (0, 0), (rows - 1, cols - 1), (rows // 2, cols // 3)]:
+        out = inspect_pixel(str(syn_cube.img_path), str(syn_reference), params, r, c)
+        assert len(out["wavelength_nm"]) == len(out["pixel"]) == len(out["reference"]) > 0
+        if np.isnan(angle[r, c]):
+            assert out["angle_rad"] is None
+        else:
+            assert out["angle_rad"] == pytest.approx(float(angle[r, c]), abs=1e-5)
+    # Different pixels give different spectra (nothing is a fixed placeholder).
+    a = inspect_pixel(str(syn_cube.img_path), str(syn_reference), params, *planted)
+    b = inspect_pixel(str(syn_cube.img_path), str(syn_reference), params, rows - 1, cols - 1)
+    assert a["pixel"] != b["pixel"]
+
+
+def test_inspect_pixel_rejects_out_of_bounds(tmp_path, syn_cube, syn_reference):
+    from marsgis_engine import inspect_pixel
+
+    params = RunParams(out_dir=str(tmp_path))
+    with pytest.raises(ValueError):
+        inspect_pixel(str(syn_cube.img_path), str(syn_reference), params, 10_000, 0)

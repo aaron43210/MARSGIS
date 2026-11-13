@@ -99,7 +99,7 @@ All settings come from `.env` (copy `.env.example`). The ones you are most likel
 | `JOB_CONCURRENCY` / `JOB_TIMEOUT_S` | `2` / `600` | Worker limits |
 | `ENGINE_MODE` | `inprocess` | `inprocess`, `subprocess` or `container` |
 | `ENGINE_IMAGE` | `ghcr.io/aaron43210/marsgis-engine:latest` | Image used when `ENGINE_MODE=container` |
-| `ENGINE_CUBE_SOURCE` | `sample` | `sample` (synthetic) or `archive` (real CRISM cubes from PDS) |
+| `ENGINE_CUBE_SOURCE` | `archive` | `archive` analyses the selected observation (streams a window of its real CRISM cube from PDS, cached after the first run); `sample` uses the bundled synthetic cube (offline demo / CI; results are flagged as practice data) |
 | `STORAGE_ROOT` | `/data` | Result rasters, shared by backend and worker |
 | `CORS_ORIGINS` | local frontend origins | Allowed browser origins |
 | `REQUIRE_API_KEY` / `API_KEYS` | `false` / `[]` | **Turn on before exposing the API publicly** |

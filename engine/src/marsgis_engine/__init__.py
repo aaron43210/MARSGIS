@@ -28,9 +28,10 @@ from __future__ import annotations
 from ._version import __version__
 from .io.envi_reader import CrismCube, load_cube
 from .io.reference import Reference, load_reference
-from .science.pipeline import RunParams, SamResult, run_sam
+from .science.pipeline import RunParams, SamResult, inspect_pixel, run_sam
 
 __all__ = [
+    "inspect_pixel",
     "__version__",
     "run_sam",
     "RunParams",
