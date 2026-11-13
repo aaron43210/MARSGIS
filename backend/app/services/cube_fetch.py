@@ -111,12 +111,74 @@ def _parse_hdr(text: str) -> dict[str, Any]:
         return [x.strip() for x in m.group(1).split(",") if x.strip()] if m else []
 
     return {
+        "samples": int(_num(r"\bsamples\s*=\s*(\d+)") or 0),
+        "lines": int(_num(r"\blines\s*=\s*(\d+)") or 0),
+        "header_offset": int(_num(r"header offset\s*=\s*(\d+)") or 0),
+        "data_type": int(_num(r"data type\s*=\s*(\d+)") or 0),
+        "interleave": (_num(r"interleave\s*=\s*(\w+)") or "").lower(),
+        "byte_order": int(_num(r"byte order\s*=\s*(\d+)") or 0),
         "bands": int(_num(r"\bbands\s*=\s*(\d+)") or 0),
         "wavelengths": _block("wavelength"),
         "bbl": _block("bbl"),
         "wavelength_units": _num(r"wavelength units\s*=\s*(\w+)") or "Nanometers",
         "data_ignore": _num(r"data ignore value\s*=\s*([-\d.eE+]+)"),
     }
+
+
+# ENVI "data type" codes -> numpy dtype names.
+_ENVI_DTYPES = {1: "u1", 2: "i2", 3: "i4", 4: "f4", 5: "f8", 12: "u2", 13: "u4"}
+
+
+def _read_bsq_window(
+    settings: Settings, img_url: str, meta: dict[str, Any], c0: int, r0: int, w: int, h: int
+):
+    """Read a window of every band with ONE HTTP range request per band, in parallel.
+
+    In a band-sequential (BSQ) cube the rows of one band are contiguous, so the window's
+    rows for a band are a single byte range (full width, then cropped). GDAL instead
+    fetches row blocks one by one, which over a high-latency link took ~20-50 s per
+    band (hours per cube). Returns ``None`` if the layout is not plain BSQ.
+    """
+    import numpy as np
+
+    code = _ENVI_DTYPES.get(meta.get("data_type", 0))
+    if meta.get("interleave") != "bsq" or code is None or not meta.get("samples"):
+        return None
+    dtype = np.dtype(("<" if meta.get("byte_order", 0) == 0 else ">") + code)
+    width, lines, bands = meta["samples"], meta["lines"], meta["bands"]
+    row_bytes = width * dtype.itemsize
+    band_bytes = row_bytes * lines
+    n_bytes = row_bytes * h
+    out = np.empty((bands, h, w), dtype="float32")
+
+    from concurrent.futures import ThreadPoolExecutor
+
+    def fetch(client, b: int) -> None:
+        start = meta.get("header_offset", 0) + b * band_bytes + r0 * row_bytes
+        rng = f"bytes={start}-{start + n_bytes - 1}"
+        for attempt in range(3):
+            try:
+                resp = client.get(img_url, headers={"Range": rng})
+                resp.raise_for_status()
+                buf = resp.content
+                if resp.status_code != 206 or len(buf) != n_bytes:
+                    raise ValueError(f"band {b}: got {len(buf)} bytes, status {resp.status_code}")
+                rows = np.frombuffer(buf, dtype=dtype).reshape(h, width)
+                out[b] = rows[:, c0 : c0 + w].astype("float32")
+                return
+            except Exception:  # noqa: BLE001 - retried, then surfaced
+                if attempt == 2:
+                    raise
+
+    limits = httpx.Limits(max_connections=settings.archive_parallel_requests)
+    with (
+        httpx.Client(
+            timeout=settings.archive_http_timeout_s, verify=ssl_context(), limits=limits
+        ) as client,
+        ThreadPoolExecutor(settings.archive_parallel_requests) as pool,
+    ):
+        list(pool.map(lambda b: fetch(client, b), range(bands)))
+    return out
 
 
 def _write_envi(base_path: Path, arr, meta: dict[str, Any], transform, crs_wkt: str | None) -> None:
@@ -227,7 +289,11 @@ def fetch_subset_cube(
             wp = min(px, width, height)
             c0, r0 = _window_origin(ds, wp, center)
             win = Window(c0, r0, min(wp, width - c0), min(wp, height - r0))
-            arr = ds.read(window=win).astype("float32")
+            arr = _read_bsq_window(
+                settings, urls["img"], meta, c0, r0, int(win.width), int(win.height)
+            )
+            if arr is None:  # not plain BSQ: let GDAL do it (slower)
+                arr = ds.read(window=win).astype("float32")
             transform = ds.window_transform(win)
             crs_wkt = ds.crs.to_wkt() if ds.crs else None
     except Exception as exc:  # noqa: BLE001

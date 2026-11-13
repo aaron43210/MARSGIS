@@ -82,7 +82,10 @@ def subset_stem(observation_id: str, center: tuple[float, float] | None) -> str:
     if center is None:
         return f"{observation_id}_subset"
     lon, lat = center
-    return f"{observation_id}_subset_{lon:+.4f}_{lat:+.4f}".replace("+", "p").replace("-", "m")
+    # No dots: callers append ".img"/".hdr" with Path.with_suffix, which would cut a
+    # name like "..._p22.3000" at its last dot.
+    tag = f"{lon:+.4f}_{lat:+.4f}".replace("+", "p").replace("-", "m").replace(".", "d")
+    return f"{observation_id}_subset_{tag}"
 
 
 def local_cube_path(

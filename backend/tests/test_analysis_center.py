@@ -79,3 +79,7 @@ def test_cache_key_differs_per_centre():
     assert subset_stem(OBS_ID, None) == f"{OBS_ID}_subset"
     a, b = subset_stem(OBS_ID, (77.05, 22.30)), subset_stem(OBS_ID, (77.10, 22.20))
     assert a != b and "/" not in a and "-" not in a.replace(OBS_ID, "")
+    # with_suffix must not truncate the name (it cuts at the last dot).
+    from pathlib import Path
+
+    assert Path(a).with_suffix(".img").name == f"{a}.img"

@@ -115,6 +115,8 @@ class Settings(BaseSettings):
     #: band-sequential, so each band is a separate range read (latency-bound).
     archive_subset_px: int = Field(default=48, ge=8, le=256)
     archive_http_timeout_s: int = Field(default=60, ge=5)
+    #: Parallel HTTP range requests when streaming a window (one per band).
+    archive_parallel_requests: int = Field(default=16, ge=1, le=64)
 
     @field_validator("cors_origins", "api_keys", mode="before")
     @classmethod
