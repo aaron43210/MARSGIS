@@ -118,6 +118,9 @@ class Settings(BaseSettings):
     archive_subset_px: int = Field(default=48, ge=8, le=256)  # "small"
     archive_rows_medium: int = Field(default=128, ge=8, le=2048)
     archive_rows_large: int = Field(default=256, ge=8, le=4096)
+    #: Disk budget for downloaded areas in storage/cubes (0 = no limit). When it is
+    #: exceeded, the least recently used downloads are deleted.
+    cube_cache_max_gb: float = Field(default=10.0, ge=0.0)
     archive_http_timeout_s: int = Field(default=60, ge=5)
     #: Parallel HTTP range requests when streaming a window (one per band).
     archive_parallel_requests: int = Field(default=16, ge=1, le=64)

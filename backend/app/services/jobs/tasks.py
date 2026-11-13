@@ -130,6 +130,32 @@ def local_cube_path(
     return None
 
 
+def prune_cube_cache(settings: Settings, keep: Path) -> None:
+    """Delete least-recently-used downloads until storage/cubes fits the budget.
+
+    Use time is the file's mtime (bumped whenever a cached cube is reused). ``keep``
+    (the cube the current job needs) is never deleted; nor are in-progress files.
+    """
+    limit = settings.cube_cache_max_gb * 1024**3
+    cubes_dir = settings.storage_path / "cubes"
+    if limit <= 0 or not cubes_dir.is_dir():
+        return
+    cubes = [p for p in cubes_dir.glob("*.img") if "_partial_" not in p.name]
+
+    def size(img: Path) -> int:
+        return sum(f.stat().st_size for f in (img, img.with_suffix(".hdr")) if f.exists())
+
+    total = sum(size(p) for p in cubes)
+    for old in sorted(cubes, key=lambda p: p.stat().st_mtime):
+        if total <= limit:
+            break
+        if old.resolve() == keep.resolve():
+            continue
+        total -= size(old)
+        for f in (old, old.with_suffix(".hdr")):
+            f.unlink(missing_ok=True)
+
+
 def stage_cube(settings: Settings, inputs: _JobInputs, progress=None) -> tuple[Path, bool]:
     """Return (cube_path, is_synthetic). 'archive' (default) streams the selected
     observation; 'sample' uses the bundled synthetic cube."""
@@ -148,6 +174,7 @@ def stage_cube(settings: Settings, inputs: _JobInputs, progress=None) -> tuple[P
     cubes_dir = settings.storage_path / "cubes"
     staged = local_cube_path(settings, inputs.observation_id, "archive", inputs.center, inputs.area)
     if staged is not None:
+        staged.touch()  # mark as recently used for the cache limit
         return staged, False
     if inputs.obs_bbox is None:
         raise EngineError(
@@ -167,6 +194,7 @@ def stage_cube(settings: Settings, inputs: _JobInputs, progress=None) -> tuple[P
         progress=progress,
     )
     if subset is not None:
+        prune_cube_cache(settings, keep=subset)
         return subset, False
     raise EngineError(
         "could not stream the MTRDR cube from the archive",
