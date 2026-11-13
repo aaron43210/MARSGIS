@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: MarsGIS API
-  version: 1.0.0
+  version: 1.1.0
   description: Shared REST contract for MarsGIS (frontend/backend/engine). Coordinates are Mars IAU 2000
     degrees, not Earth WGS84. Generated from backend/app/schemas (Pydantic) - do not hand-edit components.
 servers:
@@ -399,6 +399,40 @@ paths:
                 type: string
                 format: binary
         '404': *id001
+  /api/results/{id}/pixel:
+    get:
+      tags:
+      - analysis
+      operationId: getResultPixel
+      summary: Real spectrum + spectral angle of the result pixel under lon/lat (pixel inspector).
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: result id
+        schema:
+          type: string
+      - name: lon
+        in: query
+        required: true
+        description: Mars longitude, east-positive [-180, 180]
+        schema:
+          type: number
+      - name: lat
+        in: query
+        required: true
+        description: Mars latitude [-90, 90]
+        schema:
+          type: number
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultPixel'
+        '404': *id001
+        '422': *id002
   /api/results/{id}/tiles/{z}/{x}/{y}.png:
     get:
       tags:
@@ -500,6 +534,11 @@ components:
           type: string
         params:
           $ref: '#/components/schemas/SamParams'
+        center:
+          anyOf:
+          - $ref: '#/components/schemas/LonLat'
+          - type: 'null'
+          default: null
         status:
           $ref: '#/components/schemas/JobStatus'
         progress:
@@ -575,6 +614,11 @@ components:
           - $ref: '#/components/schemas/SamParams'
           - type: 'null'
           default: null
+        center:
+          anyOf:
+          - $ref: '#/components/schemas/LonLat'
+          - type: 'null'
+          default: null
       required:
       - observation_id
       - reference_id
@@ -632,6 +676,10 @@ components:
         caveat:
           title: Caveat
           type: string
+        synthetic_input:
+          default: false
+          title: Synthetic Input
+          type: boolean
         created_at:
           format: date-time
           title: Created At
@@ -815,7 +863,7 @@ components:
           title: Version
           type: string
         contract_version:
-          default: 1.0.0
+          default: 1.1.0
           title: Contract Version
           type: string
         git_sha:
@@ -1769,6 +1817,103 @@ components:
       - role
       - units
       title: RasterAsset
+      type: object
+    ResultPixel:
+      additionalProperties: false
+      description: The real spectrum and spectral angle of one result pixel (pixel inspector).
+      properties:
+        result_id:
+          title: Result Id
+          type: string
+        observation_id:
+          title: Observation Id
+          type: string
+        mineral:
+          title: Mineral
+          type: string
+        lon:
+          title: Lon
+          type: number
+        lat:
+          title: Lat
+          type: number
+        inside:
+          title: Inside
+          type: boolean
+        row:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Row
+        col:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Col
+        angle_rad:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Angle Rad
+        raster_angle_rad:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Raster Angle Rad
+        threshold_rad:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Threshold Rad
+        is_candidate:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Is Candidate
+        continuum_removed:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Continuum Removed
+        wavelength_nm:
+          default: []
+          items:
+            type: number
+          title: Wavelength Nm
+          type: array
+        pixel:
+          default: []
+          items:
+            anyOf:
+            - type: number
+            - type: 'null'
+          title: Pixel
+          type: array
+        reference:
+          default: []
+          items:
+            type: number
+          title: Reference
+          type: array
+        synthetic_input:
+          title: Synthetic Input
+          type: boolean
+      required:
+      - result_id
+      - observation_id
+      - mineral
+      - lon
+      - lat
+      - inside
+      - synthetic_input
+      title: ResultPixel
       type: object
     ResultRasters:
       additionalProperties: false

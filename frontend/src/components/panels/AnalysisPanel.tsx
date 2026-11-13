@@ -1,11 +1,12 @@
 import { useStore } from '@/store';
 import { Panel } from '@/components/common/Panel';
-import { Button, ErrorBanner, Spinner } from '@/components/common';
+import { Button, ErrorBanner, Spinner, Toggle } from '@/components/common';
 import { MethodSelect } from '@/components/analysis/MethodSelect';
 import { ReferenceSpectrumSelect } from '@/components/analysis/ReferenceSpectrumSelect';
 import { SamParams } from '@/components/analysis/SamParams';
 import { JobProgress } from '@/components/analysis/JobProgress';
 import { CANDIDATE_MATCH_CAVEAT } from '@/types';
+import { formatLonLat } from '@/utils/format';
 
 /** Screen 3: configure + run the SAM analysis for the selected observation. */
 export function AnalysisPanel(): React.ReactElement {
@@ -15,6 +16,9 @@ export function AnalysisPanel(): React.ReactElement {
   const submitStatus = useStore((s) => s.submitStatus);
   const submitError = useStore((s) => s.submitError);
   const setMode = useStore((s) => s.setMode);
+  const center = useStore((s) => s.config.center);
+  const useCenter = useStore((s) => s.config.useCenter);
+  const setUseCenter = useStore((s) => s.setUseCenter);
 
   const canRun = Boolean(observationId && referenceId) && submitStatus !== 'loading';
 
@@ -37,6 +41,27 @@ export function AnalysisPanel(): React.ReactElement {
           ), then its footprint becomes the analysis input.
         </div>
       )}
+
+      {observationId ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <Toggle
+            checked={useCenter && Boolean(center)}
+            onChange={setUseCenter}
+            label="Analyse around the spot I clicked"
+          />
+          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+            {center ? (
+              <>
+                {useCenter ? 'Window centred on ' : 'Last click: '}
+                <span className="mono">{formatLonLat(center.lon, center.lat, 3)}</span>
+                {useCenter ? '' : ' (off: the observation centre is used)'}
+              </>
+            ) : (
+              'Click inside the footprint on the globe to pick a spot; otherwise the observation centre is used.'
+            )}
+          </div>
+        </div>
+      ) : null}
 
       <MethodSelect />
       <ReferenceSpectrumSelect />

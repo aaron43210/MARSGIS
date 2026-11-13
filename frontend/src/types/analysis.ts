@@ -1,6 +1,6 @@
 // MarsGIS shared contract — analysis jobs & results.
-// contract_version: 1.0.0
-import type { BBox, ISODateTime } from './common';
+// contract_version: 1.1.0
+import type { BBox, ISODateTime, LonLat } from './common';
 import type { AnalysisAlgorithm, AssetRole, JobStatus } from './enums';
 import type { Legend, MapLayer } from './layer';
 
@@ -20,6 +20,8 @@ export interface AnalysisJobCreate {
   algorithm: AnalysisAlgorithm; // "SAM" in v1
   reference_id: string; // SpectralReference.id (the target mineral)
   params?: Partial<SamParams>;
+  /** Optional point inside the footprint; the analysed window is centred here. */
+  center?: LonLat;
 }
 
 export interface JobError {
@@ -35,6 +37,8 @@ export interface AnalysisJob {
   algorithm: AnalysisAlgorithm;
   reference_id: string;
   params: AnalysisParams; // resolved (defaults applied)
+  /** Analysis centre the job was created with (null = observation centre). */
+  center?: LonLat | null;
   status: JobStatus;
   progress: number; // 0..1
   message: string | null;
@@ -103,6 +107,35 @@ export interface AnalysisResult {
   map_layer: MapLayer;
   provenance_id: string;
   caveat: string;
+  /** True when the input was the bundled SYNTHETIC sample cube, not the selected observation. */
+  synthetic_input?: boolean;
   created_at: ISODateTime;
   updated_at: ISODateTime;
 }
+
+/** GET /api/results/{id}/pixel — the real spectrum and SAM angle of one result pixel. */
+export interface ResultPixel {
+  result_id: string;
+  observation_id: string;
+  mineral: string;
+  lon: number;
+  lat: number;
+  /** false when the clicked point is outside the result raster. */
+  inside: boolean;
+  row: number | null;
+  col: number | null;
+  /** Angle recomputed from the pixel spectrum (radians). */
+  angle_rad: number | null;
+  /** Angle stored in the result raster at this pixel (radians); equals angle_rad. */
+  raster_angle_rad: number | null;
+  threshold_rad: number | null;
+  is_candidate: boolean | null;
+  /** Values are continuum-removed when true (exactly what SAM compared). */
+  continuum_removed: boolean | null;
+  wavelength_nm: number[];
+  pixel: (number | null)[];
+  reference: number[];
+  /** True when the result came from the bundled synthetic sample cube. */
+  synthetic_input: boolean;
+}
+

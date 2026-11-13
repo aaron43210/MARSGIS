@@ -13,20 +13,30 @@ projection on the same 3,396,190 m sphere, so the transform stays on-body.
 
 from __future__ import annotations
 
-import os
 import threading
 
 from app.config import get_settings
+from app.core.tls import ca_bundle_path
 from app.logging import get_logger
 
 _log = get_logger("marsgis.elevation")
 
-# GDAL /vsicurl tuning: short timeouts, don't scan the bucket, cache fetched blocks.
-os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
-os.environ.setdefault("CPL_VSIL_CURL_ALLOWED_EXTENSIONS", ".tif")
-os.environ.setdefault("VSI_CACHE", "TRUE")
-os.environ.setdefault("GDAL_HTTP_MAX_RETRY", "1")
-os.environ.setdefault("GDAL_HTTP_RETRY_DELAY", "1")
+
+# GDAL /vsicurl tuning for the DEM only: short timeouts, don't scan the bucket, cache
+# fetched blocks. Applied as thread-local GDAL options (rasterio.Env) around each DEM
+# access — NEVER as process-wide env vars, which would also hide the .hdr sidecar of
+# every ENVI cube the engine opens (EMPTY_DIR) and silently drop their real CRS.
+def _gdal_opts() -> dict[str, str]:
+    return {
+        "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
+        "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".tif",
+        "VSI_CACHE": "TRUE",
+        "GDAL_HTTP_MAX_RETRY": "1",
+        "GDAL_HTTP_RETRY_DELAY": "1",
+        "GDAL_HTTP_TIMEOUT": str(get_settings().elevation_http_timeout_s),
+        "CURL_CA_BUNDLE": ca_bundle_path(),
+    }
+
 
 _lock = threading.Lock()
 _dataset = None  # cached rasterio DatasetReader (opened once, reused)
@@ -42,7 +52,6 @@ def _open() -> tuple[object, object]:
         from pyproj import Transformer
 
         settings = get_settings()
-        os.environ["GDAL_HTTP_TIMEOUT"] = str(settings.elevation_http_timeout_s)
         url = f"/vsicurl/{settings.mola_dem_url}"
         ds = rasterio.open(url)
         _to_dem = Transformer.from_crs(
@@ -81,7 +90,9 @@ def sample_elevation(lon: float, lat: float) -> float | None:
         return None
 
     try:
-        with _lock:
+        import rasterio
+
+        with _lock, rasterio.Env(**_gdal_opts()):
             ds, tr = _open()
             x, y = tr.transform(lon, lat)
             row, col = ds.index(x, y)

@@ -17,7 +17,14 @@ export const createAnalysisSlice: AppSlice<AnalysisSlice> = (set, get) => ({
   minerals: [],
   mineralsStatus: 'idle',
   mineralsError: null,
-  config: { observation_id: null, algorithm: 'SAM', reference_id: null, params: {} },
+  config: {
+    observation_id: null,
+    algorithm: 'SAM',
+    reference_id: null,
+    params: {},
+    center: null,
+    useCenter: false,
+  },
   jobs: {},
   activeJobId: null,
   submitStatus: 'idle',
@@ -58,6 +65,16 @@ export const createAnalysisSlice: AppSlice<AnalysisSlice> = (set, get) => ({
       state.config.params.threshold_rad = Math.max(0.001, Math.min(1.5, thresholdRad));
     }),
 
+  setAnalysisCenter: (center) =>
+    set((state) => {
+      state.config.center = center;
+    }),
+
+  setUseCenter: (use) =>
+    set((state) => {
+      state.config.useCenter = use;
+    }),
+
   submitJob: async () => {
     const { config } = get();
     if (!config.observation_id || !config.reference_id) {
@@ -76,6 +93,7 @@ export const createAnalysisSlice: AppSlice<AnalysisSlice> = (set, get) => ({
       algorithm: 'SAM',
       reference_id: config.reference_id,
       params: config.params,
+      ...(config.useCenter && config.center ? { center: config.center } : {}),
     };
     try {
       const job = await createJob(body);

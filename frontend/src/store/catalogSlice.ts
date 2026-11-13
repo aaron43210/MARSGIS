@@ -60,6 +60,8 @@ export const createCatalogSlice: AppSlice<CatalogSlice> = (set, get) => ({
 
   selectObservation: (id) =>
     set((state) => {
+      // A clicked analysis centre belongs to one observation; drop it on a switch.
+      if (state.selectedObservationId !== id) state.config.center = null;
       state.selectedObservationId = id;
       // Auto-populate the analysis config so switching to Analysis mode is one click.
       state.config.observation_id = id;

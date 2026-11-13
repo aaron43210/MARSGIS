@@ -19,11 +19,11 @@ With no `.env` the app boots on **SQLite** (`storage/marsgis.db`), starts the
 bundled catalogue/minerals/layers. Open http://127.0.0.1:8000/docs and
 http://127.0.0.1:8000/api/health.
 
-The default engine cube source is the bundled **synthetic** sample cube
-(`engine/sample_data`). Every result produced from it is flagged
-`synthetic_input: true` in its provenance and carries the candidate caveat — it
-is a pipeline demonstration, **never** presented as a real Mars detection. Set
-`ENGINE_CUBE_SOURCE=archive` (and stage the real MTRDR `_if` cube) for real data.
+The default engine cube source is `archive`: each analysis streams a window of the
+selected observation's real CRISM MTRDR cube from NASA PDS (cached after the first
+run). `ENGINE_CUBE_SOURCE=sample` uses the bundled **synthetic** cube instead
+(offline demo / CI); every such result is flagged `synthetic_input: true` and the
+UI says it is practice data — never a real Mars detection.
 
 ## Running the tests (offline)
 
@@ -57,7 +57,7 @@ Every variable is documented in `.env.example`. Key switches:
 | `DATABASE_URL` | `sqlite+aiosqlite:///./storage/marsgis.db` | `postgresql+asyncpg://…` (PostGIS) |
 | `JOB_BACKEND` | `inprocess` | `arq` (+ `REDIS_URL`, run `marsgis-worker`) |
 | `ENGINE_MODE` | `inprocess` | `subprocess` or `container` (rlimits + timeout) |
-| `ENGINE_CUBE_SOURCE` | `sample` (synthetic) | `archive` (real staged cube) |
+| `ENGINE_CUBE_SOURCE` | `archive` (selected observation, streamed from PDS) | `sample` only for offline demos/CI |
 | `REQUIRE_API_KEY` | `false` | **`true`** for any public deployment |
 
 ### Migrations

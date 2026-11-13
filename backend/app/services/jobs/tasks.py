@@ -74,10 +74,45 @@ class _JobInputs:
     mineral_class: str
     obs_source_url: str
     obs_bbox: tuple[float, float, float, float] | None = None
+    center: tuple[float, float] | None = None
+
+
+def subset_stem(observation_id: str, center: tuple[float, float] | None) -> str:
+    """File stem of a streamed window: one cache entry per (observation, centre)."""
+    if center is None:
+        return f"{observation_id}_subset"
+    lon, lat = center
+    return f"{observation_id}_subset_{lon:+.4f}_{lat:+.4f}".replace("+", "p").replace("-", "m")
+
+
+def local_cube_path(
+    settings: Settings,
+    observation_id: str,
+    cube_source: str,
+    center: tuple[float, float] | None = None,
+) -> Path | None:
+    """The cube a result was computed from, if it is on disk.
+
+    Shared by staging (to reuse an already-streamed subset instead of fetching it
+    again) and by the pixel inspector (which must read the very same cube).
+    """
+    if cube_source == "sample":
+        cube = settings.sample_cube_abspath
+        return cube if cube.exists() else None
+    cubes_dir = settings.storage_path / "cubes"
+    names = [f"{subset_stem(observation_id, center)}.img"]
+    if center is None:
+        names.insert(0, f"{observation_id}.img")  # a fully staged cube
+    for name in names:
+        candidate = cubes_dir / name
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def stage_cube(settings: Settings, inputs: _JobInputs) -> tuple[Path, bool]:
-    """Return (cube_path, is_synthetic). Default 'sample' uses the bundled cube."""
+    """Return (cube_path, is_synthetic). 'archive' (default) streams the selected
+    observation; 'sample' uses the bundled synthetic cube."""
     if settings.engine_cube_source == "sample":
         cube = settings.sample_cube_abspath
         if not cube.exists():
@@ -91,8 +126,8 @@ def stage_cube(settings: Settings, inputs: _JobInputs) -> tuple[Path, bool]:
     # PDS archive (via /vsicurl range reads — never a bulk download), or reuse a
     # pre-staged full cube if present. Never silently substitute synthetic data.
     cubes_dir = settings.storage_path / "cubes"
-    staged = cubes_dir / f"{inputs.observation_id}.img"
-    if staged.exists():
+    staged = local_cube_path(settings, inputs.observation_id, "archive", inputs.center)
+    if staged is not None:
         return staged, False
     if inputs.obs_bbox is None:
         raise EngineError(
@@ -101,7 +136,14 @@ def stage_cube(settings: Settings, inputs: _JobInputs) -> tuple[Path, bool]:
         )
     from app.services.cube_fetch import fetch_subset_cube
 
-    subset = fetch_subset_cube(settings, inputs.observation_id, inputs.obs_bbox, cubes_dir)
+    subset = fetch_subset_cube(
+        settings,
+        inputs.observation_id,
+        inputs.obs_bbox,
+        cubes_dir,
+        center=inputs.center,
+        stem=subset_stem(inputs.observation_id, inputs.center),
+    )
     if subset is not None:
         return subset, False
     raise EngineError(
@@ -302,7 +344,14 @@ async def _load_inputs(session, job: AnalysisJobRow) -> _JobInputs:
         mineral_class=mineral.mineral_class if mineral else "other",
         obs_source_url=obs.source_url if obs else "",
         obs_bbox=(obs.minx, obs.miny, obs.maxx, obs.maxy) if obs else None,
+        center=_center_from(params.get("center")),
     )
+
+
+def _center_from(raw: Any) -> tuple[float, float] | None:
+    if isinstance(raw, dict) and "lon" in raw and "lat" in raw:
+        return (float(raw["lon"]), float(raw["lat"]))
+    return None
 
 
 async def _fail_job(job_id: str, exc: Exception) -> None:
@@ -505,6 +554,7 @@ async def _persist_result(
         map_layer=map_layer,
         provenance_id=provenance_id,
         caveat=DISCLAIMER,
+        synthetic_input=engine_result.is_synthetic,
         created_at=now,
         updated_at=now,
     )
@@ -515,6 +565,7 @@ async def _persist_result(
         "wavelength_subset_nm": list(inputs.wavelength_subset_nm)
         if inputs.wavelength_subset_nm
         else None,
+        "center": {"lon": inputs.center[0], "lat": inputs.center[1]} if inputs.center else None,
     }
     provenance = _build_provenance(
         provenance_id=provenance_id,

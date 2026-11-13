@@ -72,6 +72,16 @@ export const zAnalysisResult = z.object({
   caveat: z.string().min(1),
 });
 
+export const zResultPixel = z.object({
+  result_id: z.string(),
+  inside: z.boolean(),
+  angle_rad: z.number().nullable().optional(),
+  wavelength_nm: zNumberArray,
+  pixel: z.array(z.number().nullable()),
+  reference: zNumberArray,
+  synthetic_input: z.boolean(),
+});
+
 export const zSpectralReference = z
   .object({
     id: z.string().min(1),

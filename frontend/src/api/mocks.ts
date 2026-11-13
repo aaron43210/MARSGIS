@@ -202,6 +202,7 @@ function provenance(): Provenance {
 }
 
 const RESULT_RE = /^\/api\/results\/([^/]+)$/;
+const RESULT_PIXEL_RE = /^\/api\/results\/([^/]+)\/pixel$/;
 const PROVENANCE_RE = /^\/api\/provenance\/([^/]+)$/;
 const OBSERVATION_RE = /^\/api\/observations\/([^/]+)$/;
 const MINERAL_RE = /^\/api\/minerals\/([^/]+)$/;
@@ -217,6 +218,13 @@ export async function mockFetch(path: string, init: MockInit = {}): Promise<unkn
   const bare = path.split('?')[0] ?? path;
 
   if (bare === '/api/health') return delay(health());
+
+  // Offline demo has no image to read: say so instead of inventing a spectrum.
+  if (RESULT_PIXEL_RE.test(bare)) {
+    const err = new Error('Pixel spectra need the real backend (not available in the offline demo).');
+    err.name = 'ApiError';
+    throw err;
+  }
 
   if (bare === '/api/layers') return delay({ items: FALLBACK_BASEMAPS });
 

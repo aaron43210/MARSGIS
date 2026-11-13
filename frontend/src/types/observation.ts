@@ -1,5 +1,5 @@
 // MarsGIS shared contract — observations & datasets.
-// contract_version: 1.0.0
+// contract_version: 1.1.0
 import type { BBox, Footprint, ISODateTime, LonLat, UrlString } from './common';
 import type { DatasetKind, InstrumentType, ProductType, ServiceType } from './enums';
 

@@ -1,5 +1,5 @@
 // MarsGIS shared contract — provenance (reproducibility record for a result).
-// contract_version: 1.0.0
+// contract_version: 1.1.0
 import type { ISODateTime } from './common';
 import type { ProvenanceStepStatus } from './enums';
 

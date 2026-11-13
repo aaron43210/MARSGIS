@@ -1,6 +1,6 @@
 // MarsGIS shared contract — canonical enumerations.
 // MIRROR of contracts/enums.json. Do not edit one without the other.
-// contract_version: 1.0.0
+// contract_version: 1.1.0
 
 export const INSTRUMENT_TYPES = [
   'CRISM',

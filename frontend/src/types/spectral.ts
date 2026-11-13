@@ -1,5 +1,5 @@
 // MarsGIS shared contract — spectral reference library ("minerals").
-// contract_version: 1.0.0
+// contract_version: 1.1.0
 import type { ISODateTime } from './common';
 import type { MineralClass, SpectrumType } from './enums';
 

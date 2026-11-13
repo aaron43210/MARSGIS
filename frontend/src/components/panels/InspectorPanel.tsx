@@ -6,6 +6,8 @@ import { SpectralAngleBadge } from '@/components/inspector/SpectralAngleBadge';
 import { formatLonLat } from '@/utils/format';
 import { SERIES_COLORS } from '@/config/constants';
 
+const RAD_TO_DEG = 180 / Math.PI;
+
 /** Pixel/Spectrum inspector. Opens when a result pixel is clicked (Results mode). */
 export function InspectorPanel(): React.ReactElement {
   const open = useStore((s) => s.open);
@@ -13,37 +15,36 @@ export function InspectorPanel(): React.ReactElement {
   const error = useStore((s) => s.inspectorError);
   const point = useStore((s) => s.point);
   const reference = useStore((s) => s.reference);
-  const observed = useStore((s) => s.observed);
+  const pixel = useStore((s) => s.pixel);
   const clearInspector = useStore((s) => s.clearInspector);
 
   if (!open) {
     return (
       <Panel title="Pixel inspector">
         <div style={{ color: 'var(--text-dim)', fontSize: 12 }}>
-          In Results mode, click a pixel on the result overlay to inspect its spectral angle and
-          compare it against the reference spectrum.
+          In Results mode, click a pixel on the result overlay to see its real spectrum and its
+          spectral angle against the reference.
         </div>
       </Panel>
     );
   }
 
+  // Both curves come from the backend on the exact bands SAM used (continuum-removed when
+  // the analysis used continuum removal), so the plot shows what SAM actually compared.
   const series: SpectrumSeries[] = [];
-  let xGrid: number[] = [];
-  if (reference) {
-    xGrid = reference.wavelength;
+  if (pixel?.inside) {
     series.push({
-      label: `Reference: ${reference.mineral}`,
-      color: reference.color || SERIES_COLORS.reference,
-      y: reference.reflectance,
+      label: `Reference: ${reference?.mineral ?? pixel.mineral}`,
+      color: reference?.color || SERIES_COLORS.reference,
+      y: pixel.reference,
     });
-  }
-  if (observed && reference && observed.wavelength_nm.length === reference.wavelength.length) {
     series.push({
-      label: 'Observed pixel (synthetic)',
+      label: `This pixel (row ${pixel.row}, col ${pixel.col})`,
       color: SERIES_COLORS.observed,
-      y: observed.reflectance,
+      y: pixel.pixel,
     });
   }
+  const angleDeg = pixel?.angle_rad != null ? pixel.angle_rad * RAD_TO_DEG : null;
 
   return (
     <Panel
@@ -60,26 +61,47 @@ export function InspectorPanel(): React.ReactElement {
         </div>
       ) : null}
 
-      {status === 'loading' ? <Spinner label="Loading spectrum" /> : null}
+      {status === 'loading' ? <Spinner label="Reading the pixel spectrum" /> : null}
       {status === 'error' && error ? <ErrorBanner message={error} /> : null}
 
-      {status === 'ready' && reference ? (
+      {status === 'ready' && pixel && !pixel.inside ? (
+        <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+          This point is outside the analysed area. Click inside the result overlay.
+        </div>
+      ) : null}
+
+      {status === 'ready' && pixel?.inside ? (
         <>
           <SpectralAngleBadge
-            angleDeg={observed?.angle_deg ?? null}
-            classLabel={reference.mineral}
-            synthetic={observed?.synthetic ?? false}
+            angleDeg={angleDeg}
+            classLabel={reference?.mineral ?? pixel.mineral}
+            synthetic={pixel.synthetic_input}
           />
-
-          {xGrid.length > 0 ? <SpectrumChart x={xGrid} series={series} /> : null}
-
-          {!observed ? (
-            <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-              The v1 API does not expose per-pixel observed spectra, so the plot shows the reference
-              target spectrum only. The result overlay encodes the per-pixel SAM angle; use the
-              legend and statistics to interpret this location.
-            </div>
+          <div style={{ fontSize: 12 }}>
+            {pixel.is_candidate ? (
+              <strong style={{ color: 'var(--warn)' }}>Below the threshold: candidate.</strong>
+            ) : (
+              <span>Above the threshold: not a match.</span>
+            )}{' '}
+            {pixel.threshold_rad != null ? (
+              <span className="mono">
+                (threshold {(pixel.threshold_rad * RAD_TO_DEG).toFixed(2)}°)
+              </span>
+            ) : null}
+          </div>
+          {pixel.wavelength_nm.length > 0 ? (
+            <SpectrumChart
+              x={pixel.wavelength_nm}
+              series={series}
+              yLabel={pixel.continuum_removed ? 'Continuum-removed I/F' : 'Reflectance (I/F)'}
+            />
           ) : null}
+          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+            {pixel.continuum_removed
+              ? 'Continuum-removed values on the bands SAM used.'
+              : 'I/F values on the bands SAM used.'}{' '}
+            {pixel.wavelength_nm.length} bands.
+          </div>
         </>
       ) : null}
     </Panel>

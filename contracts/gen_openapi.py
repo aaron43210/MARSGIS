@@ -39,7 +39,7 @@ class MineralList(s.ListResponse[s.SpectralReferenceSummary]):
 TOP = [
     s.HealthResponse, s.ErrorResponse, LayerList, ObservationPage, s.Observation,
     MineralList, s.SpectralReference, s.AnalysisJobCreate, s.AnalysisJob, JobPage,
-    s.AnalysisResult, s.Provenance,
+    s.AnalysisResult, s.ResultPixel, s.Provenance,
 ]
 
 _, defs = models_json_schema(
@@ -156,6 +156,12 @@ paths = {
                               "content": {"image/tiff; application=geotiff; profile=cloud-optimized":
                                           {"schema": {"type": "string", "format": "binary"}}}},
                       "404": ERRS["404"]}}},
+    "/api/results/{id}/pixel": {"get": {"tags": ["analysis"], "operationId": "getResultPixel",
+        "summary": "Real spectrum + spectral angle of the result pixel under lon/lat (pixel inspector).",
+        "parameters": [p("id", "string", "result id"),
+                       q("lon", "number", "Mars longitude, east-positive [-180, 180]", required=True),
+                       q("lat", "number", "Mars latitude [-90, 90]", required=True)],
+        "responses": {"200": jresp("ResultPixel"), "404": ERRS["404"], "422": ERRS["422"]}}},
     "/api/results/{id}/tiles/{z}/{x}/{y}.png": {"get": {"tags": ["analysis", "map"],
         "operationId": "getResultTile",
         "summary": "Rendered PNG tile (geographic scheme, 2x1@z0, zxy) for Cesium overlay.",
@@ -174,7 +180,7 @@ paths = {
 err_content = {"application/json": {"schema": jref("ErrorResponse")}}
 doc = {
     "openapi": "3.1.0",
-    "info": {"title": "MarsGIS API", "version": "1.0.0",
+    "info": {"title": "MarsGIS API", "version": "1.1.0",
              "description": "Shared REST contract for MarsGIS (frontend/backend/engine). "
                             "Coordinates are Mars IAU 2000 degrees, not Earth WGS84. "
                             "Generated from backend/app/schemas (Pydantic) - do not hand-edit components."},

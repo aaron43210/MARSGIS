@@ -1,5 +1,5 @@
 // MarsGIS shared contract — health, query params, response envelopes, routes.
-// contract_version: 1.0.0
+// contract_version: 1.1.0
 import type { BBox, Paginated } from './common';
 import type {
   AssetRole,
@@ -24,7 +24,7 @@ export interface HealthComponent {
 export interface HealthResponse {
   status: HealthStatus;
   version: string; // app semver
-  contract_version: string; // "1.0.0"
+  contract_version: string; // "1.1.0"
   git_sha: string | null;
   time: string; // ISO datetime
   components: {
@@ -98,5 +98,6 @@ export const API_ROUTES = {
   result: (id: string) => `/api/results/${id}`,
   resultDownload: (id: string) => `/api/results/${id}/download`,
   resultTiles: (id: string) => `/api/results/${id}/tiles/{z}/{x}/{y}.png`,
+  resultPixel: (id: string) => `/api/results/${id}/pixel`,
   provenance: (id: string) => `/api/provenance/${id}`,
 } as const;

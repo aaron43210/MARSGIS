@@ -63,7 +63,13 @@ def _base_env(storage: Path, db_path: Path) -> dict[str, str]:
 
 
 @contextlib.asynccontextmanager
-async def _make_client(tmp_path: Path, monkeypatch, env_overrides: dict[str, str] | None = None):
+async def _make_client(
+    tmp_path: Path,
+    monkeypatch,
+    env_overrides: dict[str, str] | None = None,
+    *,
+    real_engine: bool = False,
+):
     from httpx import ASGITransport, AsyncClient
 
     storage = tmp_path / "storage"
@@ -81,7 +87,8 @@ async def _make_client(tmp_path: Path, monkeypatch, env_overrides: dict[str, str
 
     import app.services.engine_adapter as ea
 
-    monkeypatch.setattr(ea, "build_engine_adapter", lambda settings=None: FakeEngineAdapter())
+    if not real_engine:
+        monkeypatch.setattr(ea, "build_engine_adapter", lambda settings=None: FakeEngineAdapter())
 
     from app.db.base import dispose_engine
     from app.main import create_app
@@ -126,6 +133,13 @@ async def _wait_for_jobs_to_settle(timeout_s: float = 30.0) -> None:
 @pytest_asyncio.fixture
 async def client(tmp_path: Path, monkeypatch) -> AsyncIterator[object]:
     async with _make_client(tmp_path, monkeypatch) as c:
+        yield c
+
+
+@pytest_asyncio.fixture
+async def real_client(tmp_path: Path, monkeypatch) -> AsyncIterator[object]:
+    """Client whose jobs run the REAL engine on the bundled sample cube."""
+    async with _make_client(tmp_path, monkeypatch, real_engine=True) as c:
         yield c
 
 

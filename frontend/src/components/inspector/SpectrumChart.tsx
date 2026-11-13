@@ -5,8 +5,8 @@ import 'uplot/dist/uPlot.min.css';
 export interface SpectrumSeries {
   label: string;
   color: string;
-  /** y values aligned to the shared `x` wavelength grid. */
-  y: number[];
+  /** y values aligned to the shared `x` wavelength grid; null = no data (gap). */
+  y: (number | null)[];
 }
 
 interface SpectrumChartProps {
@@ -14,6 +14,8 @@ interface SpectrumChartProps {
   x: number[];
   series: SpectrumSeries[];
   height?: number;
+  /** y-axis label; say whether values are continuum-removed. */
+  yLabel?: string;
 }
 
 function cssVar(name: string, fallback: string): string {
@@ -23,7 +25,12 @@ function cssVar(name: string, fallback: string): string {
 }
 
 /** Thin imperative uPlot wrapper for reflectance-vs-wavelength plots. */
-export function SpectrumChart({ x, series, height = 240 }: SpectrumChartProps): React.ReactElement {
+export function SpectrumChart({
+  x,
+  series,
+  height = 240,
+  yLabel = 'Reflectance (I/F)',
+}: SpectrumChartProps): React.ReactElement {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
 
@@ -47,7 +54,7 @@ export function SpectrumChart({ x, series, height = 240 }: SpectrumChartProps): 
           ticks: { stroke: grid },
         },
         {
-          label: 'Reflectance (I/F, continuum-removed)',
+          label: yLabel,
           stroke: text,
           grid: { stroke: grid, width: 1 },
           ticks: { stroke: grid },
@@ -80,7 +87,7 @@ export function SpectrumChart({ x, series, height = 240 }: SpectrumChartProps): 
     };
     // Rebuild when the series shape changes (labels/colors/count) or x identity changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [x, series.map((s) => `${s.label}:${s.color}:${s.y.length}`).join('|'), height]);
+  }, [x, series.map((s) => `${s.label}:${s.color}:${s.y.length}`).join('|'), height, yLabel]);
 
   return <div className="chart-host" ref={hostRef} />;
 }

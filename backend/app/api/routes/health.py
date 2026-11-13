@@ -85,7 +85,7 @@ async def get_health(
     return HealthResponse(
         status=overall,
         version=__version__,
-        contract_version="1.0.0",
+        contract_version="1.1.0",
         git_sha=settings.git_sha,
         time=datetime.now(UTC),
         components=HealthComponents(db=db, engine=engine, tiler=tiler, queue=queue),

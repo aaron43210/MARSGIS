@@ -7,7 +7,7 @@ from datetime import datetime
 
 from pydantic import Field
 
-from .common import ApiModel, BBox
+from .common import ApiModel, BBox, LonLat
 from .enums import AnalysisAlgorithm, AssetRole, JobStatus
 from .layer import Legend, MapLayer
 
@@ -32,6 +32,9 @@ class AnalysisJobCreate(ApiModel):
     algorithm: AnalysisAlgorithm = AnalysisAlgorithm.SAM
     reference_id: str
     params: SamParams | None = None
+    #: Optional point inside the observation footprint. When set, the analysed window
+    #: is centred here (the spot the user clicked) instead of the observation centre.
+    center: LonLat | None = None
 
 
 class JobError(ApiModel):
@@ -47,6 +50,8 @@ class AnalysisJob(ApiModel):
     algorithm: AnalysisAlgorithm
     reference_id: str
     params: SamParams
+    #: The analysis centre the job was created with (None = observation centre).
+    center: LonLat | None = None
     status: JobStatus
     progress: float = Field(default=0.0, ge=0.0, le=1.0)
     message: str | None = None
@@ -114,5 +119,30 @@ class AnalysisResult(ApiModel):
     map_layer: MapLayer
     provenance_id: str
     caveat: str
+    #: True when the input was the bundled SYNTHETIC sample cube, not the selected
+    #: observation. The UI must say so next to the result.
+    synthetic_input: bool = False
     created_at: datetime
     updated_at: datetime
+
+
+class ResultPixel(ApiModel):
+    """The real spectrum and spectral angle of one result pixel (pixel inspector)."""
+
+    result_id: str
+    observation_id: str
+    mineral: str
+    lon: float
+    lat: float
+    inside: bool
+    row: int | None = None
+    col: int | None = None
+    angle_rad: float | None = None
+    raster_angle_rad: float | None = None
+    threshold_rad: float | None = None
+    is_candidate: bool | None = None
+    continuum_removed: bool | None = None
+    wavelength_nm: list[float] = []
+    pixel: list[float | None] = []
+    reference: list[float] = []
+    synthetic_input: bool

@@ -182,6 +182,50 @@ def _compute_stats(angle: np.ndarray, mask: np.ndarray, threshold_rad: float) ->
     return stats
 
 
+def _prepare_bands(cube: Any, reference: Any, params: RunParams) -> dict[str, Any]:
+    """Band selection, reference resampling and optional continuum removal.
+
+    Shared by :func:`run_sam` and :func:`inspect_pixel` so the inspector shows
+    exactly the bands and reference vector SAM compared.
+    """
+    window_mask = wl_mod.select_bands(
+        cube.wavelengths_nm, cube.bbl, params.window_nm, mask_bad_bands=params.mask_bad_bands
+    )
+    ov_mask = wl_mod.overlap_mask(cube.wavelengths_nm, reference.wavelengths_nm)
+    cand_mask = window_mask & ov_mask
+    cand_idx = np.where(cand_mask)[0]
+    if cand_idx.size == 0:
+        wl_mod.require_overlap(cand_mask, context="window ∩ reference coverage")
+
+    sel_wl = cube.wavelengths_nm[cand_idx]
+    ref_resampled, valid = resample_reference(
+        reference.wavelengths_nm,
+        reference.values,
+        sel_wl,
+        method=params.resample_method,
+        target_fwhm_nm=(cube.fwhm_nm[cand_idx] if cube.fwhm_nm is not None else None),
+        ref_fwhm_nm=None,
+    )
+    final_idx = cand_idx[valid]
+    final_mask = np.zeros(cube.bands, dtype=bool)
+    final_mask[final_idx] = True
+    n_used = wl_mod.require_overlap(final_mask, context="finite resampled reference bands")
+
+    wl_final = cube.wavelengths_nm[final_idx]
+    ref_vec = ref_resampled[valid]
+    ref_used = continuum_removed(ref_vec, wl_final) if params.continuum_removal else ref_vec
+    return {
+        "window_mask": window_mask,
+        "ov_mask": ov_mask,
+        "cand_idx": cand_idx,
+        "final_idx": final_idx,
+        "final_mask": final_mask,
+        "n_used": n_used,
+        "wl_final": wl_final,
+        "ref_used": np.asarray(ref_used, dtype=np.float64),
+    }
+
+
 def run_sam(cube_path: str, reference_or_mineral: str, params: RunParams) -> SamResult:
     """Run SAM on ``cube_path`` against ``reference_or_mineral``.
 
@@ -213,31 +257,10 @@ def run_sam(cube_path: str, reference_or_mineral: str, params: RunParams) -> Sam
     )
 
     # --- Band selection -------------------------------------------------
-    window_mask = wl_mod.select_bands(
-        cube.wavelengths_nm, cube.bbl, params.window_nm, mask_bad_bands=params.mask_bad_bands
-    )
-    ov_mask = wl_mod.overlap_mask(cube.wavelengths_nm, reference.wavelengths_nm)
-    cand_mask = window_mask & ov_mask
-    cand_idx = np.where(cand_mask)[0]
-    if cand_idx.size == 0:
-        wl_mod.require_overlap(cand_mask, context="window ∩ reference coverage")
-
-    sel_wl = cube.wavelengths_nm[cand_idx]
-    ref_resampled, valid = resample_reference(
-        reference.wavelengths_nm,
-        reference.values,
-        sel_wl,
-        method=params.resample_method,
-        target_fwhm_nm=(cube.fwhm_nm[cand_idx] if cube.fwhm_nm is not None else None),
-        ref_fwhm_nm=None,
-    )
-    final_idx = cand_idx[valid]
-    final_mask = np.zeros(cube.bands, dtype=bool)
-    final_mask[final_idx] = True
-    n_used = wl_mod.require_overlap(final_mask, context="finite resampled reference bands")
-
-    wl_final = cube.wavelengths_nm[final_idx]
-    ref_vec = ref_resampled[valid]
+    prep = _prepare_bands(cube, reference, params)
+    window_mask, ov_mask = prep["window_mask"], prep["ov_mask"]
+    cand_idx, final_idx, final_mask = prep["cand_idx"], prep["final_idx"], prep["final_mask"]
+    n_used, wl_final, ref_used = prep["n_used"], prep["wl_final"], prep["ref_used"]
 
     # Auditable band-alignment ledger: how the cube's bands funnel down to the
     # set actually fed to SAM. Recorded in provenance so a reader can see which
@@ -245,12 +268,6 @@ def run_sam(cube_path: str, reference_or_mineral: str, params: RunParams) -> Sam
     alignment = _build_alignment(
         cube, reference, window_mask, ov_mask, cand_idx, final_idx, wl_final, params
     )
-
-    if params.continuum_removal:
-        ref_used = continuum_removed(ref_vec, wl_final)
-    else:
-        ref_used = ref_vec
-    ref_used = np.asarray(ref_used, dtype=np.float64)
 
     _log.info(
         "SAM over %d bands (window %s nm, continuum=%s, resample=%s)",
@@ -350,3 +367,41 @@ def _crs_text(crs: Any) -> str:
         except Exception:  # noqa: BLE001
             continue
     return str(crs)
+
+
+def inspect_pixel(
+    cube_path: str, reference_or_mineral: str, params: RunParams, row: int, col: int
+) -> dict[str, Any]:
+    """Return the real spectrum of one cube pixel next to the reference, on the exact
+    bands (and with the same continuum handling) that SAM used, plus that pixel's
+    spectral angle.
+
+    Values are what SAM compared: continuum-removed when ``params.continuum_removal``
+    is on, otherwise the raw I/F. ``angle_rad`` is ``None`` for a nodata pixel.
+    """
+    cube = load_cube(cube_path, crs_fallback_wkt=params.crs_fallback_wkt)
+    if not (0 <= row < cube.rows and 0 <= col < cube.cols):
+        raise ValueError(f"pixel ({row}, {col}) outside cube {cube.rows}x{cube.cols}")
+    reference = load_reference(
+        reference_or_mineral,
+        wavelength_col=params.ref_wavelength_col,
+        value_col=params.ref_value_col,
+        wavelength_units=params.ref_wavelength_units,
+    )
+    prep = _prepare_bands(cube, reference, params)
+    block = read_block(cube, row, row + 1)  # (1, cols, bands)
+    pix = block[0, col, prep["final_idx"]].astype(np.float64)[None, :]
+    if params.continuum_removal and np.all(np.isfinite(pix)):
+        pix = continuum_removed(pix, prep["wl_final"])
+    angle = float(sam_angles(pix, prep["ref_used"])[0])
+    finite = bool(np.all(np.isfinite(pix)))
+    return {
+        "row": int(row),
+        "col": int(col),
+        "wavelength_nm": [float(w) for w in prep["wl_final"]],
+        "pixel": [float(v) if np.isfinite(v) else None for v in pix[0]],
+        "reference": [float(v) for v in prep["ref_used"]],
+        "angle_rad": angle if (finite and np.isfinite(angle)) else None,
+        "continuum_removed": bool(params.continuum_removal),
+        "mineral": reference.mineral_key,
+    }

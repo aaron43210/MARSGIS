@@ -8,6 +8,7 @@ import type {
   MapLayer,
   ObservationQuery,
   ObservationSummary,
+  ResultPixel,
   SamParams,
   SpectralReference,
   SpectralReferenceSummary,
@@ -112,6 +113,10 @@ interface AnalysisConfig {
   algorithm: 'SAM';
   reference_id: string | null;
   params: Partial<SamParams>;
+  /** Last spot clicked inside the selected observation's footprint. */
+  center: LonLat | null;
+  /** Analyse a window centred on `center` instead of the observation centre. */
+  useCenter: boolean;
 }
 
 export interface AnalysisSlice {
@@ -126,6 +131,8 @@ export interface AnalysisSlice {
   loadMinerals: () => Promise<void>;
   setReference: (referenceId: string | null) => void;
   setThresholdRad: (thresholdRad: number) => void;
+  setAnalysisCenter: (center: LonLat | null) => void;
+  setUseCenter: (use: boolean) => void;
   submitJob: () => Promise<void>;
   updateJob: (job: AnalysisJob) => void;
   setActiveJob: (id: string | null) => void;
@@ -144,14 +151,6 @@ export interface ResultSlice {
   setOverlayOpacity: (opacity: number) => void;
 }
 
-/** An observed spectrum trace for the inspector. `synthetic` MUST be surfaced in the UI. */
-export interface ObservedSpectrum {
-  wavelength_nm: number[];
-  reflectance: number[];
-  synthetic: boolean;
-  angle_deg: number | null;
-}
-
 export interface InspectorSlice {
   open: boolean;
   inspectorStatus: AsyncStatus;
@@ -159,7 +158,8 @@ export interface InspectorSlice {
   point: LonLat | null;
   referenceId: string | null;
   reference: SpectralReference | null;
-  observed: ObservedSpectrum | null;
+  /** The clicked pixel's real spectrum + angle from the backend. */
+  pixel: ResultPixel | null;
   inspectPixel: (resultId: string, lon: number, lat: number) => Promise<void>;
   clearInspector: () => void;
 }

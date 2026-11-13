@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Any
 
 from app.config import get_settings
+from app.core.tls import ssl_context
 from app.db.geo import bbox_of, footprint_to_text, polygon_from_bbox
 from app.db.models import Observation, utcnow
 from app.logging import get_logger
@@ -166,7 +167,9 @@ async def discover_crism_mtrdr(
         "pagelength": limit,
     }
     try:
-        async with httpx.AsyncClient(timeout=settings.ode_timeout_s) as client:
+        async with httpx.AsyncClient(
+            timeout=settings.ode_timeout_s, verify=ssl_context()
+        ) as client:
             resp = await client.get(settings.ode_base_url, params=params)
             resp.raise_for_status()
             data = resp.json()

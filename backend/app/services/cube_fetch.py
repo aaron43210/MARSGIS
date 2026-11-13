@@ -20,11 +20,15 @@ from typing import Any
 import httpx
 
 from app.config import Settings
+from app.core.tls import ca_bundle_path, ssl_context
 from app.logging import get_logger
 
 _log = get_logger("marsgis.cubefetch")
 
 _GDAL_ENV = {
+    # The ENVI driver must see the sibling .hdr; a process-wide EMPTY_DIR (set for
+    # the elevation COG) would hide it and the cube would fail to open.
+    "GDAL_DISABLE_READDIR_ON_OPEN": "FALSE",
     "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".img,.hdr,.lbl,.tab,.IMG,.HDR",
     "VSI_CACHE": "TRUE",
     "GDAL_HTTP_MAX_RETRY": "2",
@@ -55,7 +59,12 @@ def _resolve_mtrdr_urls(settings: Settings, observation_id: str, bbox) -> dict[s
         "pagelength": 20,
     }
     try:
-        r = httpx.get(settings.ode_base_url, params=params, timeout=settings.ode_timeout_s)
+        r = httpx.get(
+            settings.ode_base_url,
+            params=params,
+            timeout=settings.ode_timeout_s,
+            verify=ssl_context(),
+        )
         r.raise_for_status()
         data = r.json()
     except Exception as exc:  # noqa: BLE001
@@ -154,9 +163,36 @@ def _write_envi(base_path: Path, arr, meta: dict[str, Any], transform, crs_wkt: 
     hdr.write_text("\n".join(out) + "\n")
 
 
-def fetch_subset_cube(settings: Settings, observation_id: str, bbox, out_dir: Path) -> Path | None:
-    """Stream a bounded AOI subset of the observation's MTRDR cube to a local ENVI
-    file and return its ``.img`` path (or ``None`` on failure)."""
+def _window_origin(ds, size: int, center: tuple[float, float] | None) -> tuple[int, int]:
+    """Top-left (col, row) of a ``size`` window centred on ``center`` (Mars lon/lat),
+    or on the image centre; always clamped fully inside the image."""
+    width, height = ds.width, ds.height
+    if center is not None and ds.crs is not None:
+        from rasterio.warp import transform
+
+        from app.core.constants import MARS2000_GEOGRAPHIC_WKT
+
+        xs, ys = transform(MARS2000_GEOGRAPHIC_WKT, ds.crs, [center[0]], [center[1]])
+        row, col = ds.index(xs[0], ys[0])
+    else:
+        row, col = height // 2, width // 2
+    c0 = min(max(0, col - size // 2), max(0, width - size))
+    r0 = min(max(0, row - size // 2), max(0, height - size))
+    return c0, r0
+
+
+def fetch_subset_cube(
+    settings: Settings,
+    observation_id: str,
+    bbox,
+    out_dir: Path,
+    *,
+    center: tuple[float, float] | None = None,
+    stem: str | None = None,
+) -> Path | None:
+    """Stream a bounded window of the observation's MTRDR cube to a local ENVI file
+    and return its ``.img`` path (or ``None`` on failure). The window is centred on
+    ``center`` (Mars lon/lat) when given, else on the image centre."""
     import os
 
     import rasterio
@@ -167,22 +203,29 @@ def fetch_subset_cube(settings: Settings, observation_id: str, bbox, out_dir: Pa
         _log.warning("cubefetch.no_urls", obs=observation_id)
         return None
     try:
-        hdr_text = httpx.get(urls["hdr"], timeout=settings.archive_http_timeout_s).text
+        hdr_text = httpx.get(
+            urls["hdr"], timeout=settings.archive_http_timeout_s, verify=ssl_context()
+        ).text
     except Exception as exc:  # noqa: BLE001
         _log.warning("cubefetch.hdr_failed", error=str(exc))
         return None
     meta = _parse_hdr(hdr_text)
 
     px = settings.archive_subset_px
-    saved = {k: os.environ.get(k) for k in (*_GDAL_ENV, "GDAL_HTTP_TIMEOUT")}
-    os.environ.update(_GDAL_ENV)
-    os.environ["GDAL_HTTP_TIMEOUT"] = str(settings.archive_http_timeout_s)
+    # Thread-local GDAL config options (rasterio.Env) override process-wide env vars,
+    # so other features' GDAL settings can neither break nor be broken by this read.
+    gdal_opts = {
+        **_GDAL_ENV,
+        "CURL_CA_BUNDLE": ca_bundle_path(),
+        "GDAL_HTTP_TIMEOUT": str(settings.archive_http_timeout_s),
+    }
+    saved = {k: os.environ.get(k) for k in ("PROJ_IGNORE_CELESTIAL_BODY",)}
+    os.environ["PROJ_IGNORE_CELESTIAL_BODY"] = "YES"
     try:
-        with rasterio.open("/vsicurl/" + urls["img"]) as ds:
+        with rasterio.Env(**gdal_opts), rasterio.open("/vsicurl/" + urls["img"]) as ds:
             width, height = ds.width, ds.height
             wp = min(px, width, height)
-            c0 = max(0, width // 2 - wp // 2)
-            r0 = max(0, height // 2 - wp // 2)
+            c0, r0 = _window_origin(ds, wp, center)
             win = Window(c0, r0, min(wp, width - c0), min(wp, height - r0))
             arr = ds.read(window=win).astype("float32")
             transform = ds.window_transform(win)
@@ -200,7 +243,7 @@ def fetch_subset_cube(settings: Settings, observation_id: str, bbox, out_dir: Pa
     if arr.ndim != 3 or arr.shape[0] < 2:
         return None
     out_dir.mkdir(parents=True, exist_ok=True)
-    base_path = out_dir / f"{observation_id}_subset"
+    base_path = out_dir / (stem or f"{observation_id}_subset")
     try:
         _write_envi(base_path, arr, meta, transform, crs_wkt)
     except Exception as exc:  # noqa: BLE001
