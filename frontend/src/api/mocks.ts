@@ -221,7 +221,9 @@ export async function mockFetch(path: string, init: MockInit = {}): Promise<unkn
 
   // Offline demo has no image to read: say so instead of inventing a spectrum.
   if (RESULT_PIXEL_RE.test(bare)) {
-    const err = new Error('Pixel spectra need the real backend (not available in the offline demo).');
+    const err = new Error(
+      'Pixel spectra need the real backend (not available in the offline demo).',
+    );
     err.name = 'ApiError';
     throw err;
   }
