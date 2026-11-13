@@ -107,6 +107,7 @@ async def get_result_pixel(
             threshold_rad=threshold,
             continuum_removed=bool(params.get("continuum_removed", False)),
             wavelength_subset_nm=params.get("wavelength_subset_nm"),
+            band_depth=bool(params.get("band_depth", False)),
         )
     )
     result["result_id"] = result_id

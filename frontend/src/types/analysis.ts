@@ -6,8 +6,10 @@ import type { Legend, MapLayer } from './layer';
 
 /** SAM parameters. All optional on create (server applies defaults from contracts/enums.json). */
 export interface SamParams {
-  threshold_rad: number; // default 0.10; detection = angle <= threshold
+  threshold_rad: number; // default 0.30; detection = angle <= threshold
   continuum_removed: boolean; // default false (SAM is albedo-invariant; continuum removal is opt-in)
+  /** default true: compare absorption-band depth in the mineral's diagnostic window */
+  band_depth: boolean;
   wavelength_subset_nm: [number, number] | null; // default [1000, 2600]
   bands: number[] | null; // explicit band indices; overrides subset when set
   output_resolution_m: number | null;
@@ -138,6 +140,10 @@ export interface ResultPixel {
   is_candidate: boolean | null;
   /** Values are continuum-removed when true (exactly what SAM compared). */
   continuum_removed: boolean | null;
+  /** Values are absorption-band depth (1 - continuum-removed) when true. */
+  band_depth: boolean | null;
+  /** Wavelength window SAM compared, nm. */
+  window_nm: number[] | null;
   wavelength_nm: number[];
   pixel: (number | null)[];
   reference: number[];

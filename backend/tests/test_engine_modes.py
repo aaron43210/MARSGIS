@@ -30,7 +30,13 @@ def _settings() -> Settings:
     return Settings(engine_rlimit_as_mb=8192, engine_timeout_s=300)
 
 
-def _request(out_dir: Path, *, continuum: bool, window: tuple[float, float] | None):
+def _request(
+    out_dir: Path,
+    *,
+    continuum: bool,
+    window: tuple[float, float] | None,
+    band_depth: bool = False,
+):
     settings = _settings()
     return EngineRequest(
         job_id="job",
@@ -46,6 +52,7 @@ def _request(out_dir: Path, *, continuum: bool, window: tuple[float, float] | No
         out_dir=out_dir,
         is_synthetic=True,
         timestamp="placeholder",
+        band_depth=band_depth,
     )
 
 
@@ -103,3 +110,23 @@ def test_container_argv_carries_every_param(tmp_path: Path):
 
     off = ContainerEngine(_settings())._argv(_request(tmp_path, continuum=False, window=None))
     assert "--no-continuum-removal" in off
+
+
+def test_band_depth_reaches_every_engine(tmp_path: Path):
+    """Band-depth matching must give the same raster in-process and via the CLI,
+    differ from whole-spectrum SAM, and be on the container command line."""
+    req = {"continuum": False, "window": None, "band_depth": True}
+    inproc = InProcessEngine(_settings()).analyze(_request(tmp_path / "a", **req), _noop)
+    subproc = SubprocessEngine(_settings()).analyze(_request(tmp_path / "b", **req), _noop)
+    np.testing.assert_allclose(
+        _read(inproc.angle_path), _read(subproc.angle_path), rtol=0, atol=1e-6, equal_nan=True
+    )
+    plain = InProcessEngine(_settings()).analyze(
+        _request(tmp_path / "c", continuum=False, window=None), _noop
+    )
+    assert not np.allclose(_read(plain.angle_path), _read(inproc.angle_path), equal_nan=True)
+
+    argv = ContainerEngine(_settings())._argv(_request(tmp_path, **req))
+    assert "--band-depth" in argv
+    off = ContainerEngine(_settings())._argv(_request(tmp_path, continuum=False, window=None))
+    assert "--no-band-depth" in off

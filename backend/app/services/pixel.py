@@ -43,6 +43,7 @@ def inspect(
     threshold_rad: float,
     continuum_removed: bool,
     wavelength_subset_nm: list[float] | None,
+    band_depth: bool = False,
 ) -> dict[str, Any]:
     from marsgis_engine import RunParams, inspect_pixel
 
@@ -59,6 +60,7 @@ def inspect(
         window_nm=window,
         mask_bad_bands=True,
         continuum_removal=continuum_removed,
+        band_depth=band_depth,
         resample_method="linear",
         crs_fallback_wkt=MARS2000_EQUIRECT_WKT,
     )
@@ -75,6 +77,8 @@ def inspect(
         "threshold_rad": threshold_rad,
         "is_candidate": angle is not None and angle <= threshold_rad,
         "continuum_removed": out["continuum_removed"],
+        "band_depth": out["band_depth"],
+        "window_nm": out["window_nm"],
         "wavelength_nm": out["wavelength_nm"],
         "pixel": out["pixel"],
         "reference": out["reference"],

@@ -1900,6 +1900,20 @@ components:
           - type: 'null'
           default: null
           title: Continuum Removed
+        band_depth:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Band Depth
+        window_nm:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          default: null
+          title: Window Nm
         wavelength_nm:
           default: []
           items:
@@ -1958,7 +1972,7 @@ components:
       description: SAM parameters; all optional so create bodies may send a subset.
       properties:
         threshold_rad:
-          default: 0.1
+          default: 0.3
           exclusiveMinimum: 0.0
           maximum: 1.5707963267948966
           title: Threshold Rad
@@ -1966,6 +1980,10 @@ components:
         continuum_removed:
           default: false
           title: Continuum Removed
+          type: boolean
+        band_depth:
+          default: true
+          title: Band Depth
           type: boolean
         wavelength_subset_nm:
           anyOf:
