@@ -99,8 +99,14 @@ export function InspectorPanel(): React.ReactElement {
           ) : null}
           <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
             Shapes compared on {pixel.wavelength_nm.length} bands SAM used
-            {pixel.continuum_removed ? ' (continuum-removed)' : ''}. Each curve is divided by its
-            own average so their shapes can be compared; brightness does not affect the SAM angle.
+            {pixel.window_nm ? ` (${pixel.window_nm[0]}–${pixel.window_nm[1]} nm)` : ''}
+            {pixel.band_depth
+              ? ': absorption depth, so dips in the spectrum show as peaks.'
+              : pixel.continuum_removed
+                ? ' (continuum-removed).'
+                : '.'}{' '}
+            Each curve is divided by its own average so their shapes can be compared; brightness
+            does not affect the SAM angle.
           </div>
         </>
       ) : null}

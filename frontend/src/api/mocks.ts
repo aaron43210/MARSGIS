@@ -30,8 +30,9 @@ interface MockInit {
 }
 
 const DEFAULT_PARAMS: SamParams = {
-  threshold_rad: 0.1,
+  threshold_rad: 0.3,
   continuum_removed: false,
+  band_depth: true,
   wavelength_subset_nm: [1000, 2600],
   bands: null,
   output_resolution_m: null,

@@ -76,6 +76,7 @@ class _JobInputs:
     obs_bbox: tuple[float, float, float, float] | None = None
     center: tuple[float, float] | None = None
     area: str = "small"
+    band_depth: bool = False
 
 
 def area_rows(settings: Settings, area: str) -> int | None:
@@ -361,6 +362,7 @@ async def _load_inputs(session, job: AnalysisJobRow) -> _JobInputs:
         threshold_rad=float(params.get("threshold_rad", 0.10)),
         continuum_removed=bool(params.get("continuum_removed", False)),
         wavelength_subset_nm=subset_t,
+        band_depth=bool(params.get("band_depth", False)),
         mineral_name=mineral.mineral if mineral else job.reference_id,
         mineral_class=mineral.mineral_class if mineral else "other",
         obs_source_url=obs.source_url if obs else "",
@@ -470,6 +472,7 @@ async def run_analysis_job(
             threshold_rad=inputs.threshold_rad,
             continuum_removed=inputs.continuum_removed,
             wavelength_subset_nm=inputs.wavelength_subset_nm,
+            band_depth=inputs.band_depth,
             out_dir=out_dir,
             is_synthetic=is_synthetic,
             timestamp=None,
@@ -596,6 +599,7 @@ async def _persist_result(
     params = {
         "threshold_rad": threshold,
         "continuum_removed": inputs.continuum_removed,
+        "band_depth": inputs.band_depth,
         "wavelength_subset_nm": list(inputs.wavelength_subset_nm)
         if inputs.wavelength_subset_nm
         else None,

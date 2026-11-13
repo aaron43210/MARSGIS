@@ -228,3 +228,16 @@ def load_reference(
         sha256=sha256_file(source),
         point_count=int(wl_nm.size),
     )
+
+
+def diagnostic_window_nm(mineral_key: str) -> tuple[float, float] | None:
+    """The wavelength range holding a mineral's diagnostic absorptions (minerals.json)."""
+    key = mineral_key.strip().lower()
+    for entry in _load_minerals():
+        names = {str(a).lower() for a in entry.get("alias", [])} | {
+            str(entry.get("mica_key", "")).lower()
+        }
+        win = entry.get("diagnostic_window_nm")
+        if key in names and win and len(win) == 2:
+            return (float(win[0]), float(win[1]))
+    return None

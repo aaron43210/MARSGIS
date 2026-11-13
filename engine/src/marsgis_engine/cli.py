@@ -54,6 +54,13 @@ def _build_parser() -> argparse.ArgumentParser:
         default=config.DEFAULT_CONTINUUM_REMOVAL,
         help="convex-hull continuum removal on pixel + reference",
     )
+    run.add_argument(
+        "--band-depth",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="match absorption features: the mineral's diagnostic window, continuum "
+        "removed, band depth (overrides --wmin/--wmax and --continuum-removal)",
+    )
     run.add_argument("--resample", choices=["linear", "gaussian"], default=config.DEFAULT_RESAMPLE)
     run.add_argument(
         "--mask-bad-bands",
@@ -140,6 +147,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         window_nm=_window_nm(args),
         mask_bad_bands=args.mask_bad_bands,
         continuum_removal=args.continuum_removal,
+        band_depth=args.band_depth,
         resample_method=args.resample,
         out_dir=args.out,
         out_prefix=args.out_prefix,

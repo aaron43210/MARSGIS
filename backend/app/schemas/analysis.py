@@ -21,8 +21,14 @@ AreaSize = Literal["small", "medium", "large", "full"]
 class SamParams(ApiModel):
     """SAM parameters; all optional so create bodies may send a subset."""
 
-    threshold_rad: float = Field(default=0.10, gt=0.0, le=math.pi / 2)
+    #: Default for band-depth matching (the default method); whole-spectrum SAM
+    #: (band_depth=false) historically used 0.10 rad.
+    threshold_rad: float = Field(default=0.30, gt=0.0, le=math.pi / 2)
     continuum_removed: bool = False
+    #: Match each mineral's ABSORPTION FEATURES (its diagnostic window, continuum
+    #: removed, band depth) instead of the whole spectrum. Whole-spectrum SAM is
+    #: dominated by the overall slope and cannot separate carbonate, olivine and clay.
+    band_depth: bool = True
     wavelength_subset_nm: tuple[float, float] | None = (1000.0, 2600.0)
     bands: list[int] | None = None
     output_resolution_m: float | None = Field(default=None, gt=0.0)
@@ -150,6 +156,8 @@ class ResultPixel(ApiModel):
     threshold_rad: float | None = None
     is_candidate: bool | None = None
     continuum_removed: bool | None = None
+    band_depth: bool | None = None
+    window_nm: list[float] | None = None
     wavelength_nm: list[float] = []
     pixel: list[float | None] = []
     reference: list[float] = []

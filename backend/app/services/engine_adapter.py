@@ -59,6 +59,7 @@ class EngineRequest:
     out_dir: Path
     is_synthetic: bool
     timestamp: str | None = None
+    band_depth: bool = False
 
     @property
     def reference_spec(self) -> str:
@@ -111,6 +112,7 @@ def _build_run_params(request: EngineRequest):
         "window_nm": tuple(window),
         "mask_bad_bands": True,
         "continuum_removal": request.continuum_removed,
+        "band_depth": request.band_depth,
         "resample_method": "linear",
         "out_dir": str(request.out_dir),
         "out_prefix": request.result_id,
@@ -297,6 +299,7 @@ def _run_args(request: EngineRequest, *, cube: str, out: str) -> list[str]:
         "--wavelength-units",
         "nm",
         "--continuum-removal" if request.continuum_removed else "--no-continuum-removal",
+        "--band-depth" if request.band_depth else "--no-band-depth",
         "--mask-bad-bands",
         "--resample",
         "linear",

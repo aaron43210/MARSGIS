@@ -17,6 +17,10 @@ the reviewer's own fallback: download the source product once to a local cache
 
 Run:  python scripts/validate_aoi.py            # uses .cache/validation/
       python scripts/validate_aoi.py --px 384   # AOI window size
+
+If the full cube is not cached, a centred full-width strip of ``--px`` rows is
+streamed from the PDS archive instead (parallel range reads, a few minutes),
+and the AOI is its central ``--px`` columns: the same pixels either way.
 Writes docs/evidence/validation_aoi.{json,md}.
 """
 
@@ -47,15 +51,35 @@ MINERALS = ["carbonate", "olivine", "clay"]  # mg_carbonate, mg_olivine, fe_smec
 REFERENCE = "Ehlmann et al. 2008 (Science 322:1828); Mustard et al. 2009 (JGR 114:E00D12)"
 
 
-def _prepare_local_cube(px: int, work: Path):
-    """Read a central AOI from the cached full cube and write an engine-ready
+# Footprint of FRT00003E12 (lon/lat, deg E) used only to look the product up in ODE.
+OBS_BBOX = (76.90, 22.20, 77.25, 22.45)
+
+
+def _source_cube(px: int) -> tuple[Path, Path] | None:
+    """The cached full cube, else a centred ``px``-row strip streamed from PDS."""
+    if IMG.exists() and HDR.exists():
+        return IMG, HDR
+    from app.config import get_settings
+    from app.services.cube_fetch import fetch_subset_cube
+
+    CACHE.mkdir(parents=True, exist_ok=True)
+    img = fetch_subset_cube(
+        get_settings(), OBS, OBS_BBOX, CACHE, stem=f"{OBS}_strip{px}", rows=px,
+        progress=lambda n, t: print(f"   fetched band {n}/{t}", end="\r", flush=True),
+    )
+    print()
+    return (img, img.with_suffix(".hdr")) if img else None
+
+
+def _prepare_local_cube(px: int, work: Path, img: Path, hdr: Path):
+    """Read a central AOI from the source cube and write an engine-ready
     ENVI (real wavelengths + Mars map info) via the validated writer."""
     import rasterio
     from app.services.cube_fetch import _parse_hdr, _write_envi
     from rasterio.windows import Window
 
-    meta = _parse_hdr(HDR.read_text(errors="ignore"))
-    with rasterio.open(str(IMG)) as ds:
+    meta = _parse_hdr(hdr.read_text(errors="ignore"))
+    with rasterio.open(str(img)) as ds:
         w, h = ds.width, ds.height
         wp = min(px, w, h)
         c0 = max(0, w // 2 - wp // 2)
@@ -70,14 +94,17 @@ def _prepare_local_cube(px: int, work: Path):
     return base.with_suffix(".img"), arr.shape, full_shape, crs_wkt is not None
 
 
-def _angle_array(cube_img: Path, mineral: str, out_dir: Path):
+def _angle_array(cube_img: Path, mineral: str, out_dir: Path, band_depth: bool):
     import numpy as np
     import rasterio
     from marsgis_engine import RunParams, run_sam
 
     res = run_sam(
         str(cube_img), mineral,
-        RunParams(out_dir=str(out_dir), out_prefix=mineral, timestamp="placeholder", block_rows=16),
+        RunParams(
+            out_dir=str(out_dir), out_prefix=mineral, timestamp="placeholder", block_rows=16,
+            band_depth=band_depth,
+        ),
     )
     with rasterio.open(res.angle_path) as ds:
         return np.asarray(ds.read(1), dtype="float64"), json.loads(Path(res.provenance_path).read_text())
@@ -88,7 +115,11 @@ def main() -> int:
 
     ap = argparse.ArgumentParser(description="Validation-AOI scientific-defensibility gate")
     ap.add_argument("--px", type=int, default=384, help="central AOI window size")
-    ap.add_argument("--threshold", type=float, default=0.10, help="SAM candidate threshold (rad)")
+    ap.add_argument("--threshold", type=float, default=0.30, help="SAM candidate threshold (rad)")
+    ap.add_argument(
+        "--band-depth", action=argparse.BooleanOptionalAction, default=True,
+        help="match band depth in each mineral's diagnostic window (the app default)",
+    )
     args = ap.parse_args()
 
     record: dict[str, Any] = {
@@ -99,12 +130,15 @@ def main() -> int:
         "expectation": "olivine broad; carbonate present but localized; method discriminates",
     }
 
-    if not (IMG.exists() and HDR.exists()):
-        record.update(status="incomplete", reason=f"cached cube missing under {CACHE}")
+    source = _source_cube(args.px)
+    if source is None:
+        record.update(status="incomplete", reason="no cached cube and the PDS fetch failed")
         return _finish(record, 2)
 
+    record["method"] = "band-depth SAM" if args.band_depth else "whole-spectrum SAM"
+    record["source"] = "cached full cube" if source[0] == IMG else f"PDS strip of {args.px} rows"
     work = Path(tempfile.mkdtemp())
-    cube_img, aoi_shape, full_shape, has_crs = _prepare_local_cube(args.px, work)
+    cube_img, aoi_shape, full_shape, has_crs = _prepare_local_cube(args.px, work, *source)
     record["aoi_shape_bands_lines_samples"] = list(aoi_shape)
     record["full_cube_shape_bands_lines_samples"] = list(full_shape)
     record["aoi_has_real_crs"] = has_crs
@@ -113,7 +147,7 @@ def main() -> int:
     angles: dict[str, Any] = {}
     bands_used: dict[str, int] = {}
     for m in MINERALS:
-        arr, prov = _angle_array(cube_img, m, work / m)
+        arr, prov = _angle_array(cube_img, m, work / m, args.band_depth)
         angles[m] = arr
         bands_used[m] = prov["wavelength_alignment"]["n_bands_used"]
 
@@ -183,6 +217,7 @@ def _write_md(record: dict[str, Any]) -> None:
         f"- Independent reference: {record['independent_reference']}",
         f"- Expectation: {record['expectation']}",
         f"- Status: **{record['status']}**",
+        f"- Method: {record.get('method', 'whole-spectrum SAM')}; source: {record.get('source', '-')}",
     ]
     if record["status"] == "ok":
         d = record["detected_fraction"]

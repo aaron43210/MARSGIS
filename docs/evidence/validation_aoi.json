@@ -4,6 +4,8 @@
   "locality": "Nili Fossae",
   "independent_reference": "Ehlmann et al. 2008 (Science 322:1828); Mustard et al. 2009 (JGR 114:E00D12)",
   "expectation": "olivine broad; carbonate present but localized; method discriminates",
+  "method": "band-depth SAM",
+  "source": "PDS strip of 384 rows",
   "aoi_shape_bands_lines_samples": [
     489,
     384,
@@ -11,32 +13,32 @@
   ],
   "full_cube_shape_bands_lines_samples": [
     489,
-    828,
+    384,
     843
   ],
   "aoi_has_real_crs": true,
   "status": "ok",
   "n_valid_pixels": 147456,
-  "threshold_rad": 0.1,
+  "threshold_rad": 0.3,
   "bands_used": {
-    "carbonate": 238,
-    "olivine": 238,
-    "clay": 238
+    "carbonate": 60,
+    "olivine": 117,
+    "clay": 83
   },
   "detected_fraction": {
-    "carbonate": 0.82373046875,
-    "olivine": 0.3645358615451389,
-    "clay": 0.7462632921006944
+    "carbonate": 3.390842013888889e-05,
+    "olivine": 0.8284776475694444,
+    "clay": 0.0003865559895833333
   },
   "best_match_share": {
-    "carbonate": 0.19642469618055555,
-    "olivine": 0.2620849609375,
-    "clay": 0.5414903428819444
+    "carbonate": 0.0005018446180555555,
+    "olivine": 0.9987114800347222,
+    "clay": 0.0007866753472222222
   },
   "checks": {
     "carbonate_structured_not_saturated": true,
-    "discriminates_best_match_not_monopoly": true,
+    "discriminates_best_match_not_monopoly": false,
     "olivine_broader_than_carbonate": true
   },
-  "defensible": true
+  "defensible": false
 }

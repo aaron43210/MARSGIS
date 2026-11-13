@@ -34,7 +34,7 @@ from ..errors import WriteError
 from ..io.envi_reader import load_cube, read_block
 from ..io.provenance import build_provenance, write_provenance
 from ..io.raster_writer import write_angle, write_candidate
-from ..io.reference import load_reference
+from ..io.reference import diagnostic_window_nm, load_reference
 from ..io.report import write_report
 from ..logging_utils import get_logger
 from . import wavelengths as wl_mod
@@ -59,6 +59,11 @@ class RunParams:
     window_nm: tuple[float, float] = config.DEFAULT_WINDOW_NM
     mask_bad_bands: bool = config.DEFAULT_MASK_BAD_BANDS
     continuum_removal: bool = config.DEFAULT_CONTINUUM_REMOVAL
+    #: Match ABSORPTION FEATURES instead of whole spectra: restrict to the mineral's
+    #: diagnostic window (minerals.json), remove the continuum and compare band depth
+    #: (1 - continuum-removed value). Whole-spectrum SAM is dominated by the overall
+    #: slope and cannot tell carbonate, olivine and clay apart on real CRISM scenes.
+    band_depth: bool = False
     resample_method: str = config.DEFAULT_RESAMPLE
     out_dir: str = "."
     out_prefix: str = config.DEFAULT_OUT_PREFIX
@@ -182,6 +187,22 @@ def _compute_stats(angle: np.ndarray, mask: np.ndarray, threshold_rad: float) ->
     return stats
 
 
+def _resolve_params(params: RunParams, reference: Any) -> RunParams:
+    """Band-depth mode: use the mineral's diagnostic window and remove the continuum."""
+    if not params.band_depth:
+        return params
+    import dataclasses
+
+    window = diagnostic_window_nm(reference.mineral_key) or params.window_nm
+    return dataclasses.replace(params, window_nm=window, continuum_removal=True)
+
+
+def _features(values: np.ndarray, wavelengths_nm: np.ndarray, params: RunParams) -> np.ndarray:
+    """What SAM compares: raw values, continuum-removed values, or band depths."""
+    out = continuum_removed(values, wavelengths_nm) if params.continuum_removal else values
+    return 1.0 - np.asarray(out, dtype=np.float64) if params.band_depth else out
+
+
 def _prepare_bands(cube: Any, reference: Any, params: RunParams) -> dict[str, Any]:
     """Band selection, reference resampling and optional continuum removal.
 
@@ -213,7 +234,7 @@ def _prepare_bands(cube: Any, reference: Any, params: RunParams) -> dict[str, An
 
     wl_final = cube.wavelengths_nm[final_idx]
     ref_vec = ref_resampled[valid]
-    ref_used = continuum_removed(ref_vec, wl_final) if params.continuum_removal else ref_vec
+    ref_used = _features(ref_vec, wl_final, params)
     return {
         "window_mask": window_mask,
         "ov_mask": ov_mask,
@@ -256,6 +277,8 @@ def run_sam(cube_path: str, reference_or_mineral: str, params: RunParams) -> Sam
         wavelength_units=params.ref_wavelength_units,
     )
 
+    params = _resolve_params(params, reference)
+
     # --- Band selection -------------------------------------------------
     prep = _prepare_bands(cube, reference, params)
     window_mask, ov_mask = prep["window_mask"], prep["ov_mask"]
@@ -286,8 +309,8 @@ def run_sam(cube_path: str, reference_or_mineral: str, params: RunParams) -> Sam
         sub = block[:, :, final_idx]  # (rows, cols, K)
         rb, cb, kb = sub.shape
         flat = sub.reshape(rb * cb, kb).astype(np.float64)
-        if params.continuum_removal:
-            flat = continuum_removed(flat, wl_final)
+        if params.continuum_removal or params.band_depth:
+            flat = _features(flat, wl_final, params)
         block_angles = sam_angles(flat, ref_used)
         angle[r0:r1, :] = block_angles.reshape(rb, cb).astype(np.float32)
 
@@ -298,6 +321,7 @@ def run_sam(cube_path: str, reference_or_mineral: str, params: RunParams) -> Sam
     band_counts = wl_mod.band_summary(window_mask, cube.bbl, final_mask)
     stats.update(band_counts)
     stats["mineral"] = reference.mineral_key
+    stats["band_depth"] = bool(params.band_depth)
     stats["reference"] = reference.name
     stats["width"] = int(cube.cols)
     stats["height"] = int(cube.rows)
@@ -318,6 +342,7 @@ def run_sam(cube_path: str, reference_or_mineral: str, params: RunParams) -> Sam
         "REFERENCE": reference.name,
         "THRESHOLD_RAD": f"{params.threshold_rad:.6f}",
         "CONTINUUM_REMOVAL": str(params.continuum_removal),
+        "BAND_DEPTH": str(params.band_depth),
     }
     _log.info("writing angle COG %s", angle_path.name)
     write_angle(angle_path, angle, cube, tags=raster_tags)
@@ -388,11 +413,12 @@ def inspect_pixel(
         value_col=params.ref_value_col,
         wavelength_units=params.ref_wavelength_units,
     )
+    params = _resolve_params(params, reference)
     prep = _prepare_bands(cube, reference, params)
     block = read_block(cube, row, row + 1)  # (1, cols, bands)
     pix = block[0, col, prep["final_idx"]].astype(np.float64)[None, :]
-    if params.continuum_removal and np.all(np.isfinite(pix)):
-        pix = continuum_removed(pix, prep["wl_final"])
+    if (params.continuum_removal or params.band_depth) and np.all(np.isfinite(pix)):
+        pix = _features(pix, prep["wl_final"], params)
     angle = float(sam_angles(pix, prep["ref_used"])[0])
     finite = bool(np.all(np.isfinite(pix)))
     return {
@@ -403,5 +429,7 @@ def inspect_pixel(
         "reference": [float(v) for v in prep["ref_used"]],
         "angle_rad": angle if (finite and np.isfinite(angle)) else None,
         "continuum_removed": bool(params.continuum_removal),
+        "band_depth": bool(params.band_depth),
+        "window_nm": [float(params.window_nm[0]), float(params.window_nm[1])],
         "mineral": reference.mineral_key,
     }
