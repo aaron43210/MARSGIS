@@ -4,6 +4,7 @@ import { Button, ErrorBanner, Spinner } from '@/components/common';
 import { SpectrumChart, type SpectrumSeries } from '@/components/inspector/SpectrumChart';
 import { SpectralAngleBadge } from '@/components/inspector/SpectralAngleBadge';
 import { formatLonLat } from '@/utils/format';
+import { toRelative } from '@/utils/spectra';
 import { SERIES_COLORS } from '@/config/constants';
 
 const RAD_TO_DEG = 180 / Math.PI;
@@ -36,12 +37,12 @@ export function InspectorPanel(): React.ReactElement {
     series.push({
       label: `Reference: ${reference?.mineral ?? pixel.mineral}`,
       color: reference?.color || SERIES_COLORS.reference,
-      y: pixel.reference,
+      y: toRelative(pixel.reference),
     });
     series.push({
       label: `This pixel (row ${pixel.row}, col ${pixel.col})`,
       color: SERIES_COLORS.observed,
-      y: pixel.pixel,
+      y: toRelative(pixel.pixel),
     });
   }
   const angleDeg = pixel?.angle_rad != null ? pixel.angle_rad * RAD_TO_DEG : null;
@@ -93,14 +94,13 @@ export function InspectorPanel(): React.ReactElement {
             <SpectrumChart
               x={pixel.wavelength_nm}
               series={series}
-              yLabel={pixel.continuum_removed ? 'Continuum-removed I/F' : 'Reflectance (I/F)'}
+              yLabel="Relative value (÷ own mean)"
             />
           ) : null}
           <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-            {pixel.continuum_removed
-              ? 'Continuum-removed values on the bands SAM used.'
-              : 'I/F values on the bands SAM used.'}{' '}
-            {pixel.wavelength_nm.length} bands.
+            Shapes compared on {pixel.wavelength_nm.length} bands SAM used
+            {pixel.continuum_removed ? ' (continuum-removed)' : ''}. Each curve is divided by its
+            own average so their shapes can be compared; brightness does not affect the SAM angle.
           </div>
         </>
       ) : null}
