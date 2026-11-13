@@ -9,6 +9,7 @@ import type {
   ObservationQuery,
   ObservationSummary,
   ResultPixel,
+  AreaSize,
   SamParams,
   SpectralReference,
   SpectralReferenceSummary,
@@ -117,6 +118,8 @@ interface AnalysisConfig {
   center: LonLat | null;
   /** Analyse a window centred on `center` instead of the observation centre. */
   useCenter: boolean;
+  /** How much of the observation to analyse. */
+  area: AreaSize;
 }
 
 export interface AnalysisSlice {
@@ -133,6 +136,7 @@ export interface AnalysisSlice {
   setThresholdRad: (thresholdRad: number) => void;
   setAnalysisCenter: (center: LonLat | null) => void;
   setUseCenter: (use: boolean) => void;
+  setArea: (area: AreaSize) => void;
   submitJob: () => Promise<void>;
   updateJob: (job: AnalysisJob) => void;
   setActiveJob: (id: string | null) => void;

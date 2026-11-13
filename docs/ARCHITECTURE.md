@@ -124,8 +124,11 @@ The backend reaches the engine only through `EngineAdapter`, selected by `ENGINE
 
 All three produce the same artefacts (angle COG, candidate COG, `provenance.json`, `report.txt`)
 and the same provenance shape (`engine/schemas/provenance.schema.json`). `ENGINE_CUBE_SOURCE`
-picks the input: `archive` (default: the selected observation's real MTRDR cube — a window
-at its centre, streamed from PDS on demand and cached under `storage/cubes/`) or `sample`
+picks the input: `archive` (default: the selected observation's real MTRDR cube — a
+full-width strip whose height the user picks per job (`area`: small 48 / medium 128 /
+large 256 rows, or `full` for the whole image), centred on the clicked spot or the image
+centre, streamed from PDS with one range request per band and cached under
+`storage/cubes/`) or `sample`
 (the bundled synthetic cube for offline demos/CI; the result and its pixels carry
 `synthetic_input: true` and the UI warns that it is practice data).
 

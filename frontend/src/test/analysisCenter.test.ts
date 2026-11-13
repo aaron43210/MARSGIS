@@ -29,6 +29,15 @@ describe('analysis centre option', () => {
     expect(createJob.mock.calls[1]![0].center).toEqual({ lon: 77.05, lat: 22.3 });
   });
 
+  it('sends the chosen area size (small by default)', async () => {
+    await useStore.getState().submitJob();
+    expect(createJob.mock.calls[0]![0].area).toBe('small');
+    useStore.getState().setArea('full');
+    await useStore.getState().submitJob();
+    expect(createJob.mock.calls[1]![0].area).toBe('full');
+    useStore.getState().setArea('small');
+  });
+
   it('forgets the spot when another observation is selected', () => {
     useStore.getState().setAnalysisCenter({ lon: 77.05, lat: 22.3 });
     useStore.getState().selectObservation('frt0000634b');

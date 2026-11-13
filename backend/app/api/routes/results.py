@@ -84,7 +84,8 @@ async def get_result_pixel(
     cube_source = str(params.get("cube_source") or "sample")
     raw_c = params.get("center")
     center = (float(raw_c["lon"]), float(raw_c["lat"])) if isinstance(raw_c, dict) else None
-    cube = local_cube_path(get_settings(), row.observation_id, cube_source, center)
+    area = str(params.get("area") or "small")
+    cube = local_cube_path(get_settings(), row.observation_id, cube_source, center, area)
     if cube is None:
         raise NotFoundError(
             "the image this result was computed from is no longer on this server",

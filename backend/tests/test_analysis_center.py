@@ -56,30 +56,53 @@ def _fake_ds(width=843, height=828):
     return ds
 
 
-def test_window_centred_on_click_and_clamped():
-    from app.services.cube_fetch import _window_origin
+def test_strip_centred_on_click_and_clamped():
+    from app.services.cube_fetch import _strip_start
 
     ds = _fake_ds()
-    centre = _window_origin(ds, 48, None)
-    assert centre == (843 // 2 - 24, 828 // 2 - 24)
+    assert _strip_start(ds, 48, None) == 828 // 2 - 24
 
-    # A click near the top-left corner moves the window there, clamped at 0.
-    c0, r0 = _window_origin(ds, 48, (76.9405, 22.3862))
-    assert (c0, r0) == (0, 0)
+    # A click near the top edge moves the strip there, clamped at row 0.
+    assert _strip_start(ds, 48, (76.9405, 22.3862)) == 0
 
-    # A click inside moves the window off the image centre.
-    c1, r1 = _window_origin(ds, 48, (77.00, 22.36))
-    assert (c1, r1) != centre
-    assert 0 <= c1 <= 843 - 48 and 0 <= r1 <= 828 - 48
+    # A click lower down moves the strip off the centre, kept inside the image.
+    r1 = _strip_start(ds, 48, (77.00, 22.36))
+    assert r1 != 828 // 2 - 24 and 0 <= r1 <= 828 - 48
+
+    # A strip taller than the image starts at 0.
+    assert _strip_start(ds, 5000, (77.00, 22.36)) == 0
 
 
 def test_cache_key_differs_per_centre():
     from app.services.jobs.tasks import subset_stem
 
-    assert subset_stem(OBS_ID, None) == f"{OBS_ID}_subset"
+    assert subset_stem(OBS_ID, None) == f"{OBS_ID}_strip_small"
     a, b = subset_stem(OBS_ID, (77.05, 22.30)), subset_stem(OBS_ID, (77.10, 22.20))
+    # Area size is part of the cache key; the whole image ignores the centre.
+    assert subset_stem(OBS_ID, None, "medium") != subset_stem(OBS_ID, None, "small")
+    assert subset_stem(OBS_ID, (77.05, 22.30), "full") == subset_stem(OBS_ID, None, "full")
     assert a != b and "/" not in a and "-" not in a.replace(OBS_ID, "")
     # with_suffix must not truncate the name (it cuts at the last dot).
     from pathlib import Path
 
     assert Path(a).with_suffix(".img").name == f"{a}.img"
+
+
+async def test_area_size_is_validated_and_stored(client, poll_until_done):
+    bad = await client.post(
+        "/api/analysis-jobs",
+        json={"observation_id": OBS_ID, "reference_id": REF_ID, "area": "huge"},
+    )
+    assert bad.status_code == 422
+    r = await client.post(
+        "/api/analysis-jobs",
+        json={"observation_id": OBS_ID, "reference_id": REF_ID, "area": "full"},
+    )
+    assert r.status_code == 202 and r.json()["area"] == "full"
+    done = await poll_until_done(client, r.json()["id"])
+    prov_id = (await client.get(f"/api/results/{done['result_id']}")).json()["provenance_id"]
+    assert (await client.get(f"/api/provenance/{prov_id}")).json()["params"]["area"] == "full"
+    default = await client.post(
+        "/api/analysis-jobs", json={"observation_id": OBS_ID, "reference_id": REF_ID}
+    )
+    assert default.json()["area"] == "small"
