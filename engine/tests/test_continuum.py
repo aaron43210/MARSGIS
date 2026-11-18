@@ -66,3 +66,25 @@ def test_monotone_hull_above_signal():
     out = continuum_removed(spec, wl)
     # Continuum-removed values never exceed ~1 (hull is the upper boundary).
     assert np.nanmax(out) <= 1.0 + 1e-6
+
+
+def test_vectorised_rows_match_per_pixel_exactly():
+    """The fast all-pixels path must give bit-identical output to the per-pixel hull."""
+    from marsgis_engine.science.continuum import _continuum_removed_1d
+
+    rng = np.random.default_rng(0)
+    wl = np.sort(rng.uniform(1000.0, 2600.0, 117))
+    wl = np.unique(wl)
+    smooth = 0.3 + 0.1 * np.sin(wl / 150.0)
+    spectra = smooth + rng.normal(0.0, 0.02, (500, wl.size))
+    spectra[::7] = 0.25  # flat rows: every point collinear
+    spectra[1::9] = np.linspace(0.2, 0.4, wl.size)  # straight slopes
+    spectra[3, 5] = np.nan  # a gap: goes through the per-pixel path
+    spectra[4] = -0.1  # non-positive hull -> NaN
+    out = continuum_removed(spectra, wl)
+    ref = np.stack([_continuum_removed_1d(wl, row) for row in spectra])
+    # Same hull vertices (they are exactly 1.0) and the same NaNs ...
+    assert np.array_equal(out == 1.0, ref == 1.0)
+    assert np.array_equal(np.isnan(out), np.isnan(ref))
+    # ... and the same values up to float rounding (numpy.interp fuses its multiply-add).
+    assert np.allclose(out, ref, rtol=0, atol=1e-14, equal_nan=True)

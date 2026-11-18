@@ -92,9 +92,58 @@ def continuum_removed(spectra: np.ndarray, wavelengths_nm: np.ndarray) -> np.nda
             f"band mismatch: spectra have {arr.shape[1]} bands, wavelengths have {wl.size}"
         )
     out = np.empty_like(arr, dtype=np.float64)
-    for i in range(arr.shape[0]):
+    # Fully finite rows on a strictly increasing grid (almost every pixel) take the
+    # vectorised path; rows with gaps keep the per-pixel path. Both give identical results.
+    fast = np.all(np.isfinite(arr), axis=1)
+    if wl.size < 2 or not np.all(np.isfinite(wl)) or not np.all(np.diff(wl) > 0):
+        fast[:] = False
+    if fast.any():
+        out[fast] = _continuum_removed_rows(wl, arr[fast])
+    for i in np.flatnonzero(~fast):
         out[i] = _continuum_removed_1d(wl, arr[i])
     return out
+
+
+def _continuum_removed_rows(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Continuum removal of many fully finite spectra at once.
+
+    The same monotone-chain upper hull and linear interpolation as
+    :func:`_continuum_removed_1d`, run for every row in lock-step with numpy
+    instead of a Python loop per pixel. ``x`` must be strictly increasing.
+    """
+    m, n = y.shape
+    rows = np.arange(m)
+    stack = np.empty((m, n), dtype=np.intp)  # per-row hull stack of band indices
+    top = np.zeros(m, dtype=np.intp)  # stack size per row
+    for i in range(n):
+        cand = np.flatnonzero(top >= 2)
+        while cand.size:
+            o = stack[cand, top[cand] - 2]
+            a = stack[cand, top[cand] - 1]
+            cross = (x[a] - x[o]) * (y[cand, i] - y[cand, o]) - (y[cand, a] - y[cand, o]) * (
+                x[i] - x[o]
+            )
+            pop = cand[cross >= 0]  # left turn or collinear: a is below the hull
+            top[pop] -= 1
+            cand = pop[top[pop] >= 2]  # only rows that just popped can pop again
+        stack[rows, top] = i
+        top += 1
+
+    on_hull = np.zeros((m, n), dtype=bool)
+    on_hull[np.repeat(rows, top), stack[np.arange(n) < top[:, None]]] = True
+
+    # Nearest hull vertex at or left / at or right of every band (first and last
+    # band are always on the hull).
+    idx = np.broadcast_to(np.arange(n), (m, n))
+    left = np.maximum.accumulate(np.where(on_hull, idx, -1), axis=1)
+    right = np.minimum.accumulate(np.where(on_hull, idx, n)[:, ::-1], axis=1)[:, ::-1]
+    yl = np.take_along_axis(y, left, axis=1)
+    yr = np.take_along_axis(y, right, axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        slope = (yr - yl) / (x[right] - x[left])
+        hull = np.where(left == right, yl, slope * (x - x[left]) + yl)  # numpy.interp's formula
+        ratio = y / hull
+    return np.where(np.isfinite(ratio) & (hull > 0), ratio, np.nan)
 
 
 def remove_reference_continuum(ref_vals: np.ndarray, wavelengths_nm: np.ndarray) -> np.ndarray:
