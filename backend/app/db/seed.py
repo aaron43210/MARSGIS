@@ -3,9 +3,8 @@
 Rows are validated against the frozen Pydantic contract DTOs before insert and
 upserted by id, so repeated startups never create duplicates. All data is
 bundled JSON (no network). The CRISM catalogue holds REAL Nili Fossae MTRDR
-observation ids/footprints discovered via PDS ODE; the mineral library is a
-clearly-labelled SYNTHETIC placeholder (see the file header) and is never
-presented as real CRISM MICA data.
+observation ids/footprints discovered via PDS ODE; the mineral library holds
+real CRISM MICA type spectra cut from the engine's bundled .tab files.
 """
 
 from __future__ import annotations
@@ -154,7 +153,7 @@ async def _seed_observations(session: AsyncSession) -> int:
 
 
 # --------------------------------------------------------------------------- #
-# Minerals (SYNTHETIC placeholder reference library)
+# Minerals (CRISM MICA reference library)
 # --------------------------------------------------------------------------- #
 async def _seed_minerals(session: AsyncSession) -> int:
     path = LOCAL_SEED_DIR / "mica_minerals.json"
@@ -166,8 +165,6 @@ async def _seed_minerals(session: AsyncSession) -> int:
     added = 0
     for entry in doc.get("minerals", []):
         mid = str(entry["id"])
-        if mid in existing:
-            continue
         wl = [float(w) for w in entry["wavelength_nm"]]
         refl = [float(r) for r in entry["reflectance"]]
         # Validate the full record (incl. equal-length arrays) against the contract.
@@ -192,7 +189,8 @@ async def _seed_minerals(session: AsyncSession) -> int:
                 "reflectance": refl,
             }
         )
-        session.add(
+        # merge, not add: rows from an older seed get the current spectrum and label.
+        await session.merge(
             Mineral(
                 id=mid,
                 mineral=entry["mineral"],
@@ -211,7 +209,7 @@ async def _seed_minerals(session: AsyncSession) -> int:
                 reflectance=refl,
             )
         )
-        added += 1
+        added += mid not in existing
     return added
 
 
